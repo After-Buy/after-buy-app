@@ -1,12 +1,20 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import React from "react";
 import LoginScreen from "../screens/auth/LoginScreen";
+import { AuthStackParamList } from "../types/navigation";
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<AuthStackParamList>();
 
-export default function AuthNavigator() {
+interface AuthNavigatorProps {
+  onLogin: () => void;
+}
+
+export default function AuthNavigator({ onLogin }: AuthNavigatorProps) {
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="Login" component={LoginScreen} />
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Login">
+        {(props) => <LoginScreen {...props} onLogin={onLogin} />}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 }
