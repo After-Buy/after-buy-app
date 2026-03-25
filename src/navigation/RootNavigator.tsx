@@ -1,14 +1,17 @@
-import { NavigationContainer } from "@react-navigation/native";
-import React from "react";
+import React, { useState } from "react";
 import AuthNavigator from "./AuthNavigator";
 import MainTabNavigator from "./MainTabNavigator";
 
 export default function RootNavigator() {
-  const isLogin = false; // 나중에 토큰으로 변경
+  const [isLogin, setIsLogin] = useState(false);
 
-  return (
-    <NavigationContainer>
-      {isLogin ? <MainTabNavigator /> : <AuthNavigator />}
-    </NavigationContainer>
+  const handleLogin = () => {
+    setIsLogin(true);
+  };
+
+  return isLogin ? (
+    <MainTabNavigator />
+  ) : (
+    <AuthNavigator onLogin={handleLogin} />
   );
 }
