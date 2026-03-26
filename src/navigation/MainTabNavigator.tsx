@@ -2,10 +2,10 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import React, { ComponentProps } from "react";
 import HomeScreen from "../screens/home/HomeScreen";
-import ItemScreen from "../screens/item/ItemScreen";
 import MenuScreen from "../screens/menu/MenuScreen";
 import NotificationScreen from "../screens/notification/NotificationScreen";
 import { MainTabParamList } from "../types/navigation";
+import ItemNavigator from "./ItemStackNavigator";
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -39,7 +39,7 @@ export default function MainTabNavigator() {
       })}
     >
       <Tab.Screen name="홈" component={HomeScreen} />
-      <Tab.Screen name="아이템" component={ItemScreen} />
+      <Tab.Screen name="아이템" component={ItemNavigator} />
       <Tab.Screen name="알림" component={NotificationScreen} />
       <Tab.Screen name="메뉴" component={MenuScreen} />
     </Tab.Navigator>

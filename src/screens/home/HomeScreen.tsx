@@ -32,9 +32,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   return (
     <View style={homeStyles.screen}>
+      <View style={homeStyles.headerArea}>
+        <AppHeader title="홈" leftType="none" rightType="none" />
+      </View>
       <ScrollView contentContainerStyle={homeStyles.scrollContent}>
-        <AppHeader title="홈" />
-
         <HomeAssetSection
           summary={homeData.summary}
           recentItems={homeData.recentItems}

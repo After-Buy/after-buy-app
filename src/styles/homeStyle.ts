@@ -10,9 +10,12 @@ export const homeStyles = StyleSheet.create({
     backgroundColor: colors.background,
   },
 
+  headerArea: {
+    paddingTop: spacing.xxxl,
+  },
+
   scrollContent: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl,
     paddingBottom: 100,
     gap: spacing.lg,
   },

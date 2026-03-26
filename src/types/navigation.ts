@@ -18,6 +18,19 @@ export type RootStackParamList = {
   Main: NavigatorScreenParams<MainTabParamList>;
 };
 
+export type ItemStackParamList = {
+  ItemList: {
+    folderId: number | null;
+    folderName?: string;
+  };
+  ItemDetail: {
+    deviceId: number;
+  };
+  ItemRegister: {
+    folderId: number | null;
+  };
+};
+
 export type LoginScreenProps = NativeStackScreenProps<
   AuthStackParamList,
   "Login"
