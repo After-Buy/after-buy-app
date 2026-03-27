@@ -1,24 +1,18 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import { colors } from "../../constants/colors";
-import { spacing } from "../../constants/spacing";
-import { typography } from "../../constants/typography";
+import { headerStyles as styles } from "../../styles/headerStyle";
+import { AppHeaderProps } from "../../types/common";
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
-interface AppHeaderProps {
-  title: string;
-  leftType?: "none" | "back" | "menu";
-  rightType?: "none" | "search";
-  onPressLeft?: () => void;
-  onPressRight?: () => void;
-}
 
 export default function AppHeader({
   title,
   leftType = "none",
   rightType = "none",
+  rightText,
   onPressLeft,
   onPressRight,
 }: AppHeaderProps) {
@@ -47,6 +41,14 @@ export default function AppHeader({
   };
 
   const renderRight = () => {
+    if (rightText) {
+      return (
+        <TouchableOpacity onPress={onPressRight} style={styles.textButton}>
+          <Text style={styles.textButtonLabel}>{rightText}</Text>
+        </TouchableOpacity>
+      );
+    }
+
     if (rightType === "none") return null;
 
     const iconName: IconName =
@@ -77,37 +79,3 @@ export default function AppHeader({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-
-  leftSection: {
-    flex: 1,
-    alignItems: "flex-start",
-  },
-
-  titleSection: {
-    flex: 4,
-    alignItems: "center",
-  },
-
-  rightSection: {
-    flex: 1,
-    alignItems: "flex-end",
-  },
-
-  headerTitle: {
-    fontSize: typography.subtitle,
-    color: colors.textPrimary,
-    fontWeight: "700",
-  },
-
-  iconButton: {
-    padding: spacing.sm,
-  },
-});

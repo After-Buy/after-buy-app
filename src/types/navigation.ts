@@ -19,16 +19,25 @@ export type RootStackParamList = {
 };
 
 export type ItemStackParamList = {
-  ItemList: {
-    folderId: number | null;
-    folderName?: string;
-  };
-  ItemDetail: {
-    deviceId: number;
-  };
-  ItemRegister: {
-    folderId: number | null;
-  };
+  ItemList: { folderId?: number | null; folderName?: string } | undefined;
+  ItemRegisterModel:
+    | {
+        folderId?: number | null;
+        folderName?: string;
+      }
+    | undefined;
+  ItemDetail:
+    | {
+        deviceId: number;
+        mode?: "view" | "edit";
+      }
+    | {
+        deviceId?: undefined;
+        folderId?: number | null;
+        folderName?: string;
+        modelName: string;
+        mode: "edit";
+      };
 };
 
 export type LoginScreenProps = NativeStackScreenProps<

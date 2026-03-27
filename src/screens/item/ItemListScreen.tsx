@@ -6,10 +6,10 @@ import { FlatList, Text, TouchableOpacity, View } from "react-native";
 import AppHeader from "../../components/common/AppHeader";
 import { colors } from "../../constants/colors";
 import { folderService } from "../../services/database/folderService";
-import { itemListStyle as styles } from "../../styles/item/itemListStyle";
+import { itemListStyle as styles } from "../../styles/item/itemStyle";
 import { Device, Folder } from "../../types/database";
 
-const ItemListScreen = () => {
+export default function ItemListScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { folderId = null, folderName = "전체 자산" } = route.params || {};
@@ -33,7 +33,7 @@ const ItemListScreen = () => {
   }, [folderId]);
 
   const renderItem = ({ item }: { item: any }) => {
-    const isFolder = "folder_id" in item;
+    const isFolder = !("device_id" in item);
 
     return (
       <TouchableOpacity
@@ -44,7 +44,10 @@ const ItemListScreen = () => {
                 folderId: item.folder_id,
                 folderName: item.folder_name,
               })
-            : navigation.navigate("ItemDetail", { deviceId: item.device_id })
+            : navigation.navigate("ItemDetail", {
+                deviceId: item.device_id,
+                mode: "view",
+              })
         }
       >
         <View style={styles.thumbnailBox}>
@@ -120,12 +123,10 @@ const ItemListScreen = () => {
 
       <TouchableOpacity
         style={[styles.fab, { bottom: spacing.xxxxl }]}
-        onPress={() => navigation.navigate("ItemRegister", { folderId })}
+        onPress={() => navigation.navigate("ItemRegisterModel", { folderId })}
       >
         <Ionicons name="add" size={28} color={colors.icon} />
       </TouchableOpacity>
     </View>
   );
-};
-
-export default ItemListScreen;
+}

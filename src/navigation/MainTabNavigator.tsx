@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import React, { ComponentProps } from "react";
 import HomeScreen from "../screens/home/HomeScreen";
 import MenuScreen from "../screens/menu/MenuScreen";
@@ -39,7 +40,21 @@ export default function MainTabNavigator() {
       })}
     >
       <Tab.Screen name="홈" component={HomeScreen} />
-      <Tab.Screen name="아이템" component={ItemNavigator} />
+      <Tab.Screen
+        name="아이템"
+        component={ItemNavigator}
+        options={({ route }) => {
+          const routeName = getFocusedRouteNameFromRoute(route) ?? "ItemList";
+
+          const hideTabBarScreens = ["ItemRegisterModel", "ItemDetail"];
+
+          return {
+            tabBarStyle: hideTabBarScreens.includes(routeName)
+              ? { display: "none" }
+              : undefined,
+          };
+        }}
+      />
       <Tab.Screen name="알림" component={NotificationScreen} />
       <Tab.Screen name="메뉴" component={MenuScreen} />
     </Tab.Navigator>
