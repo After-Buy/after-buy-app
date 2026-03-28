@@ -2,7 +2,7 @@ import { spacing } from "@/src/constants/spacing";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import React, { useEffect, useState } from "react";
-import { FlatList, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 import AppHeader from "../../components/common/AppHeader";
 import { colors } from "../../constants/colors";
 import { folderService } from "../../services/database/folderService";
@@ -51,11 +51,17 @@ export default function ItemListScreen() {
         }
       >
         <View style={styles.thumbnailBox}>
-          <Ionicons
-            name={isFolder ? "folder-outline" : "image-outline"}
-            size={32}
-            color="#667085"
-          />
+          {isFolder ? (
+            <Ionicons name="folder-outline" size={32} color={colors.icon} />
+          ) : item.image_url ? (
+            <Image
+              source={{ uri: item.image_url }}
+              style={styles.thumbnailImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <Ionicons name="image-outline" size={32} color={colors.icon} />
+          )}
         </View>
 
         <View style={styles.textContainer}>

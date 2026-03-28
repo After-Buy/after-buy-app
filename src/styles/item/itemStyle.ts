@@ -37,12 +37,13 @@ export const itemListStyle = StyleSheet.create({
     width: 72,
     height: 72,
     borderWidth: 1.5,
-    borderColor: "#CBD5E1",
-    borderRadius: 8,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 16,
-    backgroundColor: "#F8FAFC",
+    marginRight: spacing.lg,
+    backgroundColor: colors.cardBackground,
+    overflow: "hidden",
   },
 
   textContainer: {
@@ -117,6 +118,12 @@ export const itemListStyle = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 6,
     elevation: 6,
+  },
+
+  thumbnailImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: radius.sm,
   },
 });
 
@@ -256,7 +263,7 @@ export const itemDetailStyle = StyleSheet.create({
   },
 
   required: {
-    color: "#EF4444",
+    color: colors.danger,
   },
 
   input: {
@@ -272,7 +279,7 @@ export const itemDetailStyle = StyleSheet.create({
   },
 
   readonlyInput: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.disabledBackground,
     color: colors.textSecondary,
   },
 
@@ -292,5 +299,238 @@ export const itemDetailStyle = StyleSheet.create({
     marginTop: spacing.lg,
     fontSize: typography.body,
     color: colors.textSecondary,
+  },
+
+  inputText: {
+    fontSize: typography.body,
+    color: colors.textPrimary,
+  },
+
+  readonlyInputText: {
+    color: colors.textSecondary,
+  },
+
+  placeholderText: {
+    color: colors.placeholder,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalBackdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.overlay,
+  },
+
+  modalCard: {
+    width: "86%",
+    backgroundColor: colors.cardBackground,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+
+  modalLabel: {
+    fontSize: typography.subtitle,
+    fontWeight: "700",
+    color: colors.textPrimary,
+    marginBottom: spacing.lg,
+  },
+
+  modalInput: {
+    minHeight: 56,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    borderRadius: radius.md,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    fontSize: typography.body,
+    color: colors.textPrimary,
+  },
+
+  modalMultilineInput: {
+    minHeight: 120,
+    textAlignVertical: "top",
+  },
+
+  modalButtonRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: spacing.lg,
+    gap: spacing.md,
+  },
+
+  modalCancelButton: {
+    minWidth: 72,
+    height: 42,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.md,
+    backgroundColor: colors.cancelButton,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  modalConfirmButton: {
+    minWidth: 72,
+    height: 42,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.md,
+    backgroundColor: colors.icon,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  modalCancelText: {
+    fontSize: typography.body,
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
+
+  modalConfirmText: {
+    fontSize: typography.body,
+    fontWeight: "700",
+    color: colors.white,
+  },
+
+  productImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: radius.md,
+  },
+
+  imagePlaceholder: {
+    width: "100%",
+    height: 200,
+    borderRadius: radius.md,
+    backgroundColor: colors.disabledBackground,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  cameraButton: {
+    position: "absolute",
+    right: spacing.md,
+    bottom: spacing.md,
+    backgroundColor: colors.icon,
+    borderRadius: radius.pill,
+    padding: spacing.sm,
+  },
+
+  imageActionContainer: {
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    backgroundColor: colors.cardBackground,
+    padding: spacing.xl,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    gap: spacing.md,
+  },
+
+  imageActionButton: {
+    height: 56,
+    borderRadius: radius.md,
+    backgroundColor: colors.icon,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  imageActionText: {
+    color: colors.white,
+    fontSize: typography.body,
+    fontWeight: "600",
+  },
+  warrantyInfoWrap: {
+    marginTop: spacing.md,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  warrantyInfoExpiry: {
+    fontSize: typography.body,
+    color: colors.textSecondary,
+  },
+
+  warrantyInfoDday: {
+    fontSize: typography.body,
+    fontWeight: "700",
+    color: colors.primary,
+  },
+
+  warrantyPickerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.xl,
+    gap: spacing.lg,
+  },
+
+  warrantyValueBox: {
+    minWidth: 110,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.divider,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+  },
+
+  warrantyValueBoxActive: {
+    borderBottomColor: colors.primary,
+  },
+
+  warrantyValueText: {
+    fontSize: typography.title,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+
+  warrantyUnitText: {
+    fontSize: typography.subtitle,
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
+
+  warrantyPlusText: {
+    fontSize: typography.subtitle,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+
+  warrantyKeypad: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: spacing.md,
+    marginBottom: spacing.xl,
+  },
+
+  warrantyKey: {
+    width: "30%",
+    aspectRatio: 1.5,
+    borderRadius: radius.md,
+    backgroundColor: colors.white,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  warrantyKeyText: {
+    fontSize: typography.subtitle,
+    color: colors.textPrimary,
+    fontWeight: "600",
   },
 });

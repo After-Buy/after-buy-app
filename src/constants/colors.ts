@@ -15,4 +15,10 @@ export const colors = {
   danger: "#F04D4D",
 
   cardBackground: "#F8F9FB",
+
+  overlay: "rgba(0, 0, 0, 0.45)",
+  disabledBackground: "#F3F4F6",
+  placeholder: "#9CA3AF",
+  cancelButton: "#E5E7EB",
+  shadow: "#000",
 };

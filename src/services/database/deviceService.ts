@@ -8,10 +8,14 @@ export const deviceService = {
       product_name,
       model_name,
       brand,
+      image_url,
+      product_link_url,
       purchase_date,
       purchase_price,
       purchase_store,
       warranty_months,
+      serial_number,
+      memo,
     } = device;
 
     const pDate = new Date(purchase_date);
@@ -20,20 +24,36 @@ export const deviceService = {
 
     const result = await db.runAsync(
       `INSERT INTO devices (
-        user_id, folder_id, product_name, model_name, brand, 
-        purchase_date, purchase_price, purchase_store, warranty_months, warranty_expiry_date
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  user_id,
+  folder_id,
+  product_name,
+  model_name,
+  brand,
+  image_url,
+  product_link_url,
+  purchase_date,
+  purchase_price,
+  purchase_store,
+  warranty_months,
+  warranty_expiry_date,
+  serial_number,
+  memo
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         user_id,
         folder_id,
         product_name,
         model_name,
         brand,
+        image_url ?? null,
+        product_link_url ?? null,
         purchase_date,
         purchase_price,
-        purchase_store,
+        purchase_store ?? null,
         warranty_months,
         warranty_expiry_date,
+        serial_number ?? null,
+        memo ?? null,
       ],
     );
 

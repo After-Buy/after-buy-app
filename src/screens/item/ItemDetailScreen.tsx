@@ -1,8 +1,16 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -59,6 +67,20 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
   const [isSaving, setIsSaving] = useState(false);
   const [isEditMode, setIsEditMode] = useState(initialMode === "edit");
   const [draft, setDraft] = useState<DeviceDraft | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedField, setSelectedField] = useState<keyof DeviceDraft | null>(
+    null,
+  );
+  const [modalValue, setModalValue] = useState("");
+  const [imageActionVisible, setImageActionVisible] = useState(false);
+  const [dateModalVisible, setDateModalVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [warrantyModalVisible, setWarrantyModalVisible] = useState(false);
+  const [warrantyYears, setWarrantyYears] = useState(0);
+  const [warrantyExtraMonths, setWarrantyExtraMonths] = useState(0);
+  const [activeWarrantyUnit, setActiveWarrantyUnit] = useState<
+    "year" | "month"
+  >("year");
 
   useEffect(() => {
     const init = async () => {
@@ -119,6 +141,155 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
   const buttonLabel = useMemo(() => {
     return isEditMode ? "저장" : "수정";
   }, [isEditMode]);
+
+  const fieldMeta: Partial<
+    Record<
+      keyof DeviceDraft,
+      {
+        label: string;
+        placeholder?: string;
+        multiline?: boolean;
+        keyboardType?: "default" | "numeric";
+        required?: boolean;
+        editable?: boolean;
+      }
+    >
+  > = {
+    product_name: {
+      label: "상품명",
+      placeholder: "상품명을 입력하세요",
+      required: true,
+    },
+    model_name: {
+      label: "모델명",
+      required: true,
+      editable: false,
+    },
+    brand: {
+      label: "브랜드",
+      placeholder: "브랜드를 입력하세요",
+      required: true,
+    },
+    purchase_date: {
+      label: "구매일",
+      placeholder: "YYYY-MM-DD",
+      required: true,
+    },
+    purchase_price: {
+      label: "구매가",
+      placeholder: "예: 500000",
+      keyboardType: "numeric",
+      required: true,
+    },
+    warranty_months: {
+      label: "무상 보증 기간(개월)",
+      placeholder: "예: 12",
+      keyboardType: "numeric",
+      required: true,
+    },
+    purchase_store: {
+      label: "구매처",
+      placeholder: "구매처를 입력하세요",
+    },
+    product_link_url: {
+      label: "제품 정보 링크",
+      placeholder: "링크를 입력하세요",
+    },
+    serial_number: {
+      label: "S/N",
+      placeholder: "시리얼 번호를 입력하세요",
+    },
+    memo: {
+      label: "메모",
+      placeholder: "메모를 입력하세요",
+      multiline: true,
+    },
+  };
+
+  const formatDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  };
+
+  const pad2 = (value: number) => String(value).padStart(2, "0");
+
+  const addMonths = (date: Date, months: number) => {
+    const result = new Date(date);
+    const originalDate = result.getDate();
+
+    result.setMonth(result.getMonth() + months);
+
+    if (result.getDate() !== originalDate) {
+      result.setDate(0);
+    }
+
+    return result;
+  };
+
+  const getWarrantyDisplay = (totalMonthsText: string) => {
+    const totalMonths = Number(totalMonthsText || "0");
+
+    if (!totalMonths || Number.isNaN(totalMonths)) {
+      return {
+        years: 0,
+        months: 0,
+        text: "보증 기간을 선택하세요",
+        hasValue: false,
+      };
+    }
+
+    const years = Math.floor(totalMonths / 12);
+    const months = totalMonths % 12;
+
+    return {
+      years,
+      months,
+      text: `${years}년 ${months}개월`,
+      hasValue: true,
+    };
+  };
+
+  const getWarrantyInfo = () => {
+    if (!draft?.purchase_date || !draft?.warranty_months) return null;
+
+    const [year, month, day] = draft.purchase_date.split("-").map(Number);
+    const totalMonths = Number(draft.warranty_months);
+
+    if (
+      !year ||
+      !month ||
+      !day ||
+      Number.isNaN(totalMonths) ||
+      totalMonths <= 0
+    ) {
+      return null;
+    }
+
+    const purchaseDate = new Date(year, month - 1, day);
+    const expiryDate = addMonths(purchaseDate, totalMonths);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    expiryDate.setHours(0, 0, 0, 0);
+
+    const diffMs = expiryDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    const expiryText = `${expiryDate.getFullYear()} / ${pad2(expiryDate.getMonth() + 1)} / ${pad2(expiryDate.getDate())} 에 종료`;
+
+    let ddayText = "";
+    if (diffDays > 0) ddayText = `D-${diffDays}`;
+    else if (diffDays === 0) ddayText = "D-Day";
+    else ddayText = `D+${Math.abs(diffDays)}`;
+
+    return {
+      expiryText,
+      ddayText,
+    };
+  };
 
   const updateField = (key: keyof DeviceDraft, value: string) => {
     setDraft((prev) => {
@@ -199,10 +370,14 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
           product_name: draft.product_name.trim(),
           model_name: draft.model_name.trim(),
           brand: draft.brand.trim(),
+          image_url: draft.image_url.trim(),
+          product_link_url: draft.product_link_url.trim(),
           purchase_date: draft.purchase_date.trim(),
           purchase_price: Number(draft.purchase_price),
           purchase_store: draft.purchase_store.trim(),
           warranty_months: Number(draft.warranty_months),
+          serial_number: draft.serial_number.trim(),
+          memo: draft.memo.trim(),
         });
 
         Alert.alert("완료", "제품이 등록되었습니다.", [
@@ -237,10 +412,106 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
     }
   };
 
+  const openFieldModal = (key: keyof DeviceDraft) => {
+    if (!draft) return;
+    if (!isEditMode) return;
+
+    const meta = fieldMeta[key];
+    if (!meta) return;
+    if (meta.editable === false) return;
+
+    setSelectedField(key);
+    setModalValue(String(draft[key] ?? ""));
+    setModalVisible(true);
+  };
+
+  const closeFieldModal = () => {
+    setModalVisible(false);
+    setSelectedField(null);
+    setModalValue("");
+  };
+
+  const applyFieldModal = () => {
+    if (!selectedField) return;
+    updateField(selectedField, modalValue);
+    closeFieldModal();
+  };
+
+  const openPurchaseDateModal = () => {
+    if (!draft) return;
+    if (!isEditMode) return;
+
+    if (draft.purchase_date) {
+      const [year, month, day] = draft.purchase_date.split("-").map(Number);
+
+      if (year && month && day) {
+        setSelectedDate(new Date(year, month - 1, day));
+      } else {
+        setSelectedDate(new Date());
+      }
+    } else {
+      setSelectedDate(new Date());
+    }
+
+    setDateModalVisible(true);
+  };
+
+  const openWarrantyModal = () => {
+    if (!draft) return;
+    if (!isEditMode) return;
+
+    const totalMonths = Number(draft.warranty_months || "0");
+
+    if (!Number.isNaN(totalMonths) && totalMonths > 0) {
+      setWarrantyYears(Math.floor(totalMonths / 12));
+      setWarrantyExtraMonths(totalMonths % 12);
+    } else {
+      setWarrantyYears(0);
+      setWarrantyExtraMonths(0);
+    }
+
+    setActiveWarrantyUnit("year");
+    setWarrantyModalVisible(true);
+  };
+
+  const applyWarrantyModal = () => {
+    const totalMonths = warrantyYears * 12 + warrantyExtraMonths;
+    updateField("warranty_months", String(totalMonths));
+    setWarrantyModalVisible(false);
+  };
+
+  const clearWarrantyModal = () => {
+    setWarrantyYears(0);
+    setWarrantyExtraMonths(0);
+  };
+
+  const appendWarrantyDigit = (digit: number) => {
+    if (activeWarrantyUnit === "year") {
+      setWarrantyYears((prev) => {
+        const next = Number(`${prev}${digit}`);
+        return Math.min(next, 99);
+      });
+      return;
+    }
+
+    setWarrantyExtraMonths((prev) => {
+      const next = Number(`${prev}${digit}`);
+      return Math.min(next, 11);
+    });
+  };
+
+  const removeWarrantyDigit = () => {
+    if (activeWarrantyUnit === "year") {
+      setWarrantyYears((prev) => Math.floor(prev / 10));
+      return;
+    }
+
+    setWarrantyExtraMonths((prev) => Math.floor(prev / 10));
+  };
+
   const renderField = (
-    label: string,
+    fieldKey: keyof DeviceDraft,
     value: string,
-    onChangeText: (text: string) => void,
     options?: {
       required?: boolean;
       editable?: boolean;
@@ -252,29 +523,162 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
     const isEditable = options?.editable ?? isEditMode;
     const required = options?.required ?? false;
     const showRequiredMark = required && isEditMode;
+    const isPressable = isEditMode && isEditable;
 
     return (
       <View style={styles.card}>
         <Text style={styles.label}>
-          {label}
+          {fieldMeta[fieldKey]?.label}
           {showRequiredMark && <Text style={styles.required}> *</Text>}
         </Text>
 
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          editable={isEditable}
-          placeholder={options?.placeholder}
-          multiline={options?.multiline}
-          keyboardType={options?.keyboardType ?? "default"}
+        <Pressable
+          onPress={() => {
+            if (isPressable) openFieldModal(fieldKey);
+          }}
           style={[
             styles.input,
             !isEditable && styles.readonlyInput,
             options?.multiline && styles.multilineInput,
           ]}
-        />
+        >
+          <Text
+            style={[
+              styles.inputText,
+              !isEditable && styles.readonlyInputText,
+              !value && styles.placeholderText,
+            ]}
+            numberOfLines={options?.multiline ? 4 : 1}
+          >
+            {value || options?.placeholder || ""}
+          </Text>
+        </Pressable>
       </View>
     );
+  };
+
+  const renderPurchaseDateField = () => {
+    const value = draft?.purchase_date ?? "";
+
+    return (
+      <View style={styles.card}>
+        <Text style={styles.label}>
+          구매일{isEditMode && <Text style={styles.required}> *</Text>}
+        </Text>
+
+        <Pressable
+          onPress={openPurchaseDateModal}
+          style={[styles.input, !isEditMode && styles.readonlyInput]}
+        >
+          <Text
+            style={[
+              styles.inputText,
+              !isEditMode && styles.readonlyInputText,
+              !value && styles.placeholderText,
+            ]}
+          >
+            {value || "YYYY-MM-DD"}
+          </Text>
+        </Pressable>
+      </View>
+    );
+  };
+
+  const renderWarrantyField = () => {
+    const display = getWarrantyDisplay(draft?.warranty_months ?? "");
+    const warrantyInfo = getWarrantyInfo();
+
+    return (
+      <View style={styles.card}>
+        <Text style={styles.label}>
+          무상 보증 기간{isEditMode && <Text style={styles.required}> *</Text>}
+        </Text>
+
+        <Pressable
+          onPress={openWarrantyModal}
+          style={[styles.input, !isEditMode && styles.readonlyInput]}
+        >
+          <Text
+            style={[
+              styles.inputText,
+              !isEditMode && styles.readonlyInputText,
+              !display.hasValue && styles.placeholderText,
+            ]}
+          >
+            {display.hasValue ? display.text : "보증 기간을 선택하세요"}
+          </Text>
+        </Pressable>
+
+        {warrantyInfo && (
+          <View style={styles.warrantyInfoWrap}>
+            <Text style={styles.warrantyInfoExpiry}>
+              {warrantyInfo.expiryText}
+            </Text>
+            <Text style={styles.warrantyInfoDday}>{warrantyInfo.ddayText}</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const renderImageCard = () => {
+    const hasImage = !!draft?.image_url;
+
+    return (
+      <View style={styles.card}>
+        <Pressable onPress={() => isEditMode && setImageActionVisible(true)}>
+          {hasImage ? (
+            <Image
+              source={{ uri: draft.image_url }}
+              style={styles.productImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <Text style={styles.placeholderText}>
+                제품 이미지를 추가해주세요
+              </Text>
+            </View>
+          )}
+
+          {isEditMode && (
+            <View style={styles.cameraButton}>
+              <MaterialCommunityIcons
+                name="camera-plus"
+                size={30}
+                color="white"
+              />
+            </View>
+          )}
+        </Pressable>
+      </View>
+    );
+  };
+  const handlePickFromGallery = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+    });
+
+    if (result.canceled) return;
+
+    const asset = result.assets[0];
+
+    updateField("image_url", asset.uri); // 🔥 핵심
+    setImageActionVisible(false);
+  };
+  const handleTakePhoto = async () => {
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+    });
+
+    if (result.canceled) return;
+
+    const asset = result.assets[0];
+
+    updateField("image_url", asset.uri);
+    setImageActionVisible(false);
   };
 
   if (isLoading || !draft) {
@@ -302,95 +706,243 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {renderField(
-          "상품명",
-          draft.product_name,
-          (text) => updateField("product_name", text),
-          {
-            required: true,
-            placeholder: "상품명을 입력하세요",
-          },
-        )}
+        {renderImageCard()}
+        {renderField("product_name", draft.product_name, {
+          required: true,
+          placeholder: "상품명을 입력하세요",
+        })}
 
-        {renderField("모델명", draft.model_name, () => {}, {
+        {renderField("model_name", draft.model_name, {
           required: true,
           editable: false,
         })}
 
-        {renderField(
-          "브랜드",
-          draft.brand,
-          (text) => updateField("brand", text),
-          {
-            required: true,
-            placeholder: "브랜드를 입력하세요",
-          },
-        )}
+        {renderField("brand", draft.brand, {
+          required: true,
+          placeholder: "브랜드를 입력하세요",
+        })}
 
-        {renderField(
-          "구매일",
-          draft.purchase_date,
-          (text) => updateField("purchase_date", text),
-          {
-            required: true,
-            placeholder: "YYYY-MM-DD",
-          },
-        )}
+        {renderPurchaseDateField()}
 
-        {renderField(
-          "구매가",
-          draft.purchase_price,
-          (text) => updateField("purchase_price", text),
-          {
-            required: true,
-            placeholder: "예: 500000",
-            keyboardType: "numeric",
-          },
-        )}
+        {renderField("purchase_price", draft.purchase_price, {
+          required: true,
+          placeholder: "예: 500000",
+          keyboardType: "numeric",
+        })}
 
-        {renderField(
-          "무상 보증 기간(개월)",
-          draft.warranty_months,
-          (text) => updateField("warranty_months", text),
-          {
-            required: true,
-            placeholder: "예: 12",
-            keyboardType: "numeric",
-          },
-        )}
+        {renderWarrantyField()}
 
-        {renderField(
-          "구매처",
-          draft.purchase_store,
-          (text) => updateField("purchase_store", text),
-          {
-            placeholder: "구매처를 입력하세요",
-          },
-        )}
+        {renderField("purchase_store", draft.purchase_store, {
+          placeholder: "구매처를 입력하세요",
+        })}
 
-        {renderField(
-          "제품 정보 링크",
-          draft.product_link_url,
-          (text) => updateField("product_link_url", text),
-          {
-            placeholder: "링크를 입력하세요",
-          },
-        )}
+        {renderField("product_link_url", draft.product_link_url, {
+          placeholder: "링크를 입력하세요",
+        })}
 
-        {renderField(
-          "S/N",
-          draft.serial_number,
-          (text) => updateField("serial_number", text),
-          {
-            placeholder: "시리얼 번호를 입력하세요",
-          },
-        )}
+        {renderField("serial_number", draft.serial_number, {
+          placeholder: "시리얼 번호를 입력하세요",
+        })}
 
-        {renderField("메모", draft.memo, (text) => updateField("memo", text), {
+        {renderField("memo", draft.memo, {
           placeholder: "메모를 입력하세요",
           multiline: true,
         })}
       </ScrollView>
+      {dateModalVisible && (
+        <DateTimePicker
+          value={selectedDate}
+          mode="date"
+          display={Platform.OS === "ios" ? "inline" : "default"}
+          onChange={(_, date) => {
+            if (date) {
+              updateField("purchase_date", formatDate(date));
+              setSelectedDate(date);
+            }
+            setDateModalVisible(false);
+          }}
+        />
+      )}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeFieldModal}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <Pressable style={styles.modalBackdrop} onPress={closeFieldModal} />
+
+          <View style={styles.modalCard}>
+            <Text style={styles.modalLabel}>
+              {selectedField ? fieldMeta[selectedField]?.label : ""}
+            </Text>
+
+            <TextInput
+              value={modalValue}
+              onChangeText={setModalValue}
+              autoFocus
+              placeholder={
+                selectedField ? fieldMeta[selectedField]?.placeholder : ""
+              }
+              keyboardType={
+                selectedField
+                  ? (fieldMeta[selectedField]?.keyboardType ?? "default")
+                  : "default"
+              }
+              multiline={
+                selectedField ? fieldMeta[selectedField]?.multiline : false
+              }
+              style={[
+                styles.modalInput,
+                selectedField &&
+                  fieldMeta[selectedField]?.multiline &&
+                  styles.modalMultilineInput,
+              ]}
+            />
+
+            <View style={styles.modalButtonRow}>
+              <Pressable
+                style={styles.modalCancelButton}
+                onPress={closeFieldModal}
+              >
+                <Text style={styles.modalCancelText}>취소</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.modalConfirmButton}
+                onPress={applyFieldModal}
+              >
+                <Text style={styles.modalConfirmText}>적용</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+      <Modal
+        visible={imageActionVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setImageActionVisible(false)}
+      >
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setImageActionVisible(false)}
+        />
+
+        <View style={styles.imageActionContainer}>
+          <Pressable
+            style={styles.imageActionButton}
+            onPress={handlePickFromGallery}
+          >
+            <Text style={styles.imageActionText}>갤러리에서 선택</Text>
+          </Pressable>
+
+          <Pressable style={styles.imageActionButton} onPress={handleTakePhoto}>
+            <Text style={styles.imageActionText}>직접 촬영</Text>
+          </Pressable>
+        </View>
+      </Modal>
+      <Modal
+        visible={warrantyModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setWarrantyModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setWarrantyModalVisible(false)}
+          />
+
+          <View style={styles.modalCard}>
+            <Text style={styles.modalLabel}>무상 보증 기간</Text>
+
+            <View style={styles.warrantyPickerRow}>
+              <Pressable
+                style={[
+                  styles.warrantyValueBox,
+                  activeWarrantyUnit === "year" &&
+                    styles.warrantyValueBoxActive,
+                ]}
+                onPress={() => setActiveWarrantyUnit("year")}
+              >
+                <Text style={styles.warrantyValueText}>
+                  {pad2(warrantyYears)}
+                </Text>
+                <Text style={styles.warrantyUnitText}>년</Text>
+              </Pressable>
+
+              <Text style={styles.warrantyPlusText}>+</Text>
+
+              <Pressable
+                style={[
+                  styles.warrantyValueBox,
+                  activeWarrantyUnit === "month" &&
+                    styles.warrantyValueBoxActive,
+                ]}
+                onPress={() => setActiveWarrantyUnit("month")}
+              >
+                <Text style={styles.warrantyValueText}>
+                  {pad2(warrantyExtraMonths)}
+                </Text>
+                <Text style={styles.warrantyUnitText}>개월</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.warrantyKeypad}>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                <Pressable
+                  key={num}
+                  style={styles.warrantyKey}
+                  onPress={() => appendWarrantyDigit(num)}
+                >
+                  <Text style={styles.warrantyKeyText}>{num}</Text>
+                </Pressable>
+              ))}
+
+              <Pressable
+                style={styles.warrantyKey}
+                onPress={removeWarrantyDigit}
+              >
+                <Text style={styles.warrantyKeyText}>←</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.warrantyKey}
+                onPress={() => appendWarrantyDigit(0)}
+              >
+                <Text style={styles.warrantyKeyText}>0</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.warrantyKey}
+                onPress={applyWarrantyModal}
+              >
+                <Text style={styles.warrantyKeyText}>확인</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.modalButtonRow}>
+              <Pressable
+                style={styles.modalCancelButton}
+                onPress={clearWarrantyModal}
+              >
+                <Text style={styles.modalCancelText}>제거</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.modalConfirmButton}
+                onPress={applyWarrantyModal}
+              >
+                <Text style={styles.modalConfirmText}>적용</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
