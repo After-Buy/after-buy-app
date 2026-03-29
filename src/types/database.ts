@@ -6,6 +6,7 @@ export interface Folder {
   created_at: string;
   updated_at: string;
   child_count?: number;
+  device_count?: number;
 }
 
 export interface Device {
@@ -40,10 +41,16 @@ export interface OCRLog {
   created_at: string;
 }
 
+export type BreadcrumbItem = {
+  folder_id: number | null;
+  folder_name: string;
+};
+
 export interface FolderContentResponse {
   current_folder?: Folder;
   folders: Folder[];
   devices: Device[];
+  breadcrumbs: BreadcrumbItem[];
 }
 
 export type CreateDeviceRequest = Omit<

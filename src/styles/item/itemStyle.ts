@@ -125,6 +125,110 @@ export const itemListStyle = StyleSheet.create({
     height: "100%",
     borderRadius: radius.sm,
   },
+
+  selectionHeaderButton: {
+    minWidth: 40,
+    minHeight: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  selectionCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: colors.icon,
+    backgroundColor: colors.background,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  selectionCircleActive: {
+    backgroundColor: colors.icon,
+  },
+
+  headerTextButton: {
+    minWidth: 40,
+    minHeight: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  headerTextButtonLabel: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+
+  breadcrumbContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+
+  breadcrumbIcon: {
+    marginBottom: -2,
+  },
+
+  breadcrumbText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontWeight: "400",
+  },
+
+  breadcrumbTextActive: {
+    fontSize: 14,
+    color: colors.textPrimary,
+    fontWeight: "700",
+  },
+
+  breadcrumbDivider: {
+    marginHorizontal: 6,
+    color: "#9CA3AF",
+  },
+
+  itemSelectToggle: {
+    position: "absolute",
+    top: 18,
+    left: 18,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: colors.icon,
+    backgroundColor: colors.background,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 3,
+  },
+
+  itemSelectToggleActive: {
+    backgroundColor: colors.icon,
+  },
+
+  bottomActionBar: {
+    minHeight: 72,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+    backgroundColor: colors.background,
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    paddingTop: spacing.sm,
+  },
+
+  bottomActionButton: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  bottomActionLabel: {
+    marginTop: 6,
+    fontSize: 15,
+    color: "#475467",
+  },
 });
 
 export const itemRegisterModelStyle = StyleSheet.create({

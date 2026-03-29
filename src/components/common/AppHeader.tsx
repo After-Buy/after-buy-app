@@ -13,12 +13,15 @@ export default function AppHeader({
   leftType = "none",
   rightType = "none",
   rightText,
+  leftComponent,
+  rightComponent,
   onPressLeft,
   onPressRight,
 }: AppHeaderProps) {
   const navigation = useNavigation();
 
   const renderLeft = () => {
+    if (leftComponent) return leftComponent;
     if (leftType === "none") return null;
 
     const iconName: IconName = leftType === "back" ? "chevron-left" : "menu";
@@ -41,6 +44,7 @@ export default function AppHeader({
   };
 
   const renderRight = () => {
+    if (rightComponent) return rightComponent;
     if (rightText) {
       return (
         <TouchableOpacity onPress={onPressRight} style={styles.textButton}>
