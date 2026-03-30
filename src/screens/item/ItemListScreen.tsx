@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import AppHeader from "../../components/common/AppHeader";
 import { colors } from "../../constants/colors";
+import { deviceService } from "../../services/database/deviceService";
 import { folderService } from "../../services/database/folderService";
 import { itemListStyle as styles } from "../../styles/item/itemStyle";
 import { BreadcrumbItem, Device, Folder } from "../../types/database";
@@ -46,6 +47,18 @@ export default function ItemListScreen() {
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [folderModalVisible, setFolderModalVisible] = useState(false);
+
+  const [moveModalVisible, setMoveModalVisible] = useState(false);
+  const [moveTargetFolderId, setMoveTargetFolderId] = useState<number | null>(
+    null,
+  );
+  const [moveTargetFolderName, setMoveTargetFolderName] = useState("전체 자산");
+  const [moveTargetFolders, setMoveTargetFolders] = useState<Folder[]>([]);
+  const [moveTargetDevices, setMoveTargetDevices] = useState<Device[]>([]);
+  const [moveTargetBreadcrumbs, setMoveTargetBreadcrumbs] = useState<
+    BreadcrumbItem[]
+  >([]);
+
   const [newFolderName, setNewFolderName] = useState("");
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
 
@@ -165,6 +178,121 @@ export default function ItemListScreen() {
     }
   };
 
+  const loadMoveModalData = async (
+    targetFolderId: number | null,
+    targetFolderName: string,
+  ) => {
+    const { folders, devices, breadcrumbs } =
+      await folderService.getFolderContents(1, targetFolderId);
+
+    setMoveTargetFolderId(targetFolderId);
+    setMoveTargetFolderName(targetFolderName);
+    setMoveTargetFolders(folders);
+    setMoveTargetDevices(devices);
+    setMoveTargetBreadcrumbs([
+      { folder_id: null, folder_name: "root" },
+      ...breadcrumbs,
+    ]);
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedCount === 0) {
+      Alert.alert("안내", "삭제할 항목을 선택해주세요.");
+      return;
+    }
+
+    Alert.alert("삭제 확인", "선택한 항목을 삭제하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "삭제",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            for (const folderId of selectedFolders) {
+              await folderService.deleteFolder(folderId);
+            }
+
+            for (const deviceId of selectedDevices) {
+              await deviceService.deleteDevice(deviceId);
+            }
+
+            await loadData();
+            exitSelectionMode();
+
+            Alert.alert("완료", "삭제되었습니다.");
+          } catch (error) {
+            Alert.alert("오류", "삭제 중 문제가 발생했습니다.");
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleOpenMoveModal = async () => {
+    if (selectedCount === 0) {
+      Alert.alert("안내", "이동할 항목을 선택해주세요.");
+      return;
+    }
+
+    try {
+      await loadMoveModalData(folderId, folderName);
+      setMoveModalVisible(true);
+    } catch (error) {
+      Alert.alert("오류", "이동 위치를 불러오지 못했습니다.");
+    }
+  };
+
+  const handlePressMoveFolder = async (folder: Folder) => {
+    await loadMoveModalData(folder.folder_id, folder.folder_name);
+  };
+
+  const handlePressMoveBreadcrumb = async (item: BreadcrumbItem) => {
+    if (item.folder_id === null) {
+      await loadMoveModalData(null, "전체 자산");
+      return;
+    }
+
+    await loadMoveModalData(item.folder_id, item.folder_name);
+  };
+
+  const handleConfirmMove = async () => {
+    if (selectedCount === 0) {
+      Alert.alert("안내", "이동할 항목을 선택해주세요.");
+      return;
+    }
+
+    try {
+      for (const selectedFolderId of selectedFolders) {
+        const isInvalid = await folderService.isDescendantFolder(
+          selectedFolderId,
+          moveTargetFolderId,
+        );
+
+        if (isInvalid) {
+          Alert.alert(
+            "안내",
+            "폴더는 자기 자신 또는 하위 폴더로 이동할 수 없습니다.",
+          );
+          return;
+        }
+      }
+
+      await folderService.bulkMoveItems({
+        folderIds: selectedFolders,
+        deviceIds: selectedDevices,
+        targetFolderId: moveTargetFolderId,
+      });
+
+      setMoveModalVisible(false);
+      await loadData();
+      exitSelectionMode();
+
+      Alert.alert("완료", "항목이 이동되었습니다.");
+    } catch (error) {
+      Alert.alert("오류", "이동 중 문제가 발생했습니다.");
+    }
+  };
+
   const exitSelectionMode = () => {
     setSelectionMode(false);
     setSelectedFolders([]);
@@ -179,6 +307,8 @@ export default function ItemListScreen() {
 
   const allFolderIds = folders.map((folder) => folder.folder_id);
   const allDeviceIds = devices.map((device) => device.device_id);
+
+  const selectedCount = selectedFolders.length + selectedDevices.length;
 
   const isAllSelected =
     [...allFolderIds, ...allDeviceIds].length > 0 &&
@@ -239,6 +369,82 @@ export default function ItemListScreen() {
     });
   };
 
+  const renderListCard = ({
+    item,
+    selectable = false,
+    isSelected = false,
+    onPress,
+    onPressSelect,
+    showRightIcon = true,
+  }: {
+    item: Folder | Device;
+    selectable?: boolean;
+    isSelected?: boolean;
+    onPress: () => void;
+    onPressSelect?: () => void;
+    showRightIcon?: boolean;
+  }) => {
+    const isFolder = !("device_id" in item);
+
+    return (
+      <TouchableOpacity style={styles.itemCard} onPress={onPress}>
+        {selectable && onPressSelect && (
+          <TouchableOpacity
+            onPress={onPressSelect}
+            style={[
+              styles.itemSelectToggle,
+              isSelected && styles.itemSelectToggleActive,
+            ]}
+          >
+            {isSelected && (
+              <Ionicons name="checkmark" size={18} color={colors.white} />
+            )}
+          </TouchableOpacity>
+        )}
+
+        <View style={styles.thumbnailBox}>
+          {isFolder ? (
+            <Ionicons name="folder-outline" size={32} color={colors.icon} />
+          ) : item.image_url ? (
+            <Image
+              source={{ uri: item.image_url }}
+              style={styles.thumbnailImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <Ionicons name="image-outline" size={32} color={colors.icon} />
+          )}
+        </View>
+
+        <View style={styles.textContainer}>
+          {!isFolder && <Text style={styles.codeText}>{item.model_name}</Text>}
+
+          <Text style={styles.titleText}>
+            {isFolder ? item.folder_name : item.product_name}
+          </Text>
+
+          {isFolder ? (
+            <Text style={styles.folderCountText}>
+              {item.device_count ?? 0}개
+            </Text>
+          ) : (
+            <Text style={styles.subtitleText}>{item.brand}</Text>
+          )}
+        </View>
+
+        {showRightIcon && (
+          <View style={styles.rightIconWrapper}>
+            <Ionicons
+              name="ellipsis-vertical"
+              size={18}
+              color={colors.textSecondary}
+            />
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
   const renderItem = ({ item }: { item: any }) => {
     const isFolder = !("device_id" in item);
     const isSelected = isFolder
@@ -266,63 +472,14 @@ export default function ItemListScreen() {
       }
     };
 
-    return (
-      <TouchableOpacity style={styles.itemCard} onPress={handlePressCard}>
-        {selectionMode && (
-          <TouchableOpacity
-            onPress={() => {
-              toggleSelection(item);
-            }}
-            style={[
-              styles.itemSelectToggle,
-              isSelected && styles.itemSelectToggleActive,
-            ]}
-          >
-            {isSelected && (
-              <Ionicons name="checkmark" size={18} color="white" />
-            )}
-          </TouchableOpacity>
-        )}
-
-        <View style={styles.thumbnailBox}>
-          {isFolder ? (
-            <Ionicons name="folder-outline" size={32} color={colors.icon} />
-          ) : item.image_url ? (
-            <Image
-              source={{ uri: item.image_url }}
-              style={styles.thumbnailImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <Ionicons name="image-outline" size={32} color={colors.icon} />
-          )}
-        </View>
-
-        <View style={styles.textContainer}>
-          {!isFolder && (
-            <Text style={styles.codeText}>{item.product_code}</Text>
-          )}
-
-          <Text style={styles.titleText}>
-            {isFolder ? item.folder_name : item.product_name}
-          </Text>
-
-          {isFolder ? (
-            <Text style={styles.folderCountText}>
-              {item.device_count ?? 0}개
-            </Text>
-          ) : (
-            <Text style={styles.subtitleText}>
-              {item.brand} | {item.model_name}
-            </Text>
-          )}
-        </View>
-
-        <View style={styles.rightIconWrapper}>
-          <Ionicons name="ellipsis-vertical" size={18} color="#667085" />
-        </View>
-      </TouchableOpacity>
-    );
+    return renderListCard({
+      item,
+      selectable: selectionMode,
+      isSelected,
+      onPress: handlePressCard,
+      onPressSelect: () => toggleSelection(item),
+      showRightIcon: true,
+    });
   };
 
   return (
@@ -371,34 +528,11 @@ export default function ItemListScreen() {
         {menuVisible && (
           <>
             <Pressable
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                zIndex: 10,
-              }}
+              style={styles.menuBackdrop}
               onPress={() => setMenuVisible(false)}
             />
 
-            <View
-              style={{
-                position: "absolute",
-                top: 72,
-                left: 20,
-                backgroundColor: "white",
-                borderRadius: 12,
-                paddingVertical: 8,
-                minWidth: 140,
-                zIndex: 20,
-                elevation: 6,
-                shadowColor: "#000",
-                shadowOpacity: 0.08,
-                shadowRadius: 8,
-                shadowOffset: { width: 0, height: 4 },
-              }}
-            >
+            <View style={styles.menuCard}>
               <TouchableOpacity
                 style={{ paddingHorizontal: 16, paddingVertical: 12 }}
                 onPress={() => {
@@ -414,18 +548,16 @@ export default function ItemListScreen() {
                   });
                 }}
               >
-                <Text style={{ fontSize: 15, color: "#111827" }}>선택</Text>
+                <Text style={styles.menuItemText}>선택</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={{ paddingHorizontal: 16, paddingVertical: 12 }}
+                style={styles.menuItemButton}
                 onPress={() => {
                   setMenuVisible(false);
                   setFolderModalVisible(true);
                 }}
               >
-                <Text style={{ fontSize: 15, color: "#111827" }}>
-                  폴더 추가
-                </Text>
+                <Text style={styles.menuItemText}>폴더 추가</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -444,20 +576,18 @@ export default function ItemListScreen() {
                 {item.folder_id === null ? (
                   <MaterialCommunityIcons
                     name="home-outline"
-                    size={18}
-                    color={isLast ? colors.textPrimary : colors.textSecondary}
-                    style={{ marginRight: 2 }}
+                    size={25}
+                    style={
+                      isLast
+                        ? styles.breadcrumbTextActive
+                        : styles.breadcrumbText
+                    }
                   />
                 ) : (
                   <Text
-                    style={[
-                      styles.breadcrumbIcon,
-                      {
-                        color: isLast
-                          ? colors.textPrimary
-                          : colors.textSecondary,
-                      },
-                    ]}
+                    style={{
+                      color: isLast ? colors.textPrimary : colors.textSecondary,
+                    }}
                   >
                     {item.folder_name}
                   </Text>
@@ -498,9 +628,7 @@ export default function ItemListScreen() {
       {selectionMode && (
         <View style={styles.bottomActionBar}>
           <TouchableOpacity
-            onPress={() => {
-              console.log("이동 클릭");
-            }}
+            onPress={handleOpenMoveModal}
             style={[
               styles.bottomActionButton,
               { paddingBottom: insets.bottom > 0 ? insets.bottom : spacing.md },
@@ -516,7 +644,7 @@ export default function ItemListScreen() {
 
           <TouchableOpacity
             onPress={() => {
-              console.log("삭제 클릭");
+              handleDeleteSelected();
             }}
             style={[
               styles.bottomActionButton,
@@ -617,6 +745,103 @@ export default function ItemListScreen() {
                 >
                   {isCreatingFolder ? "생성 중..." : "생성"}
                 </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={moveModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMoveModalVisible(false)}
+      >
+        <View style={styles.moveModalOverlay}>
+          <Pressable
+            style={styles.moveModalBackdrop}
+            onPress={() => setMoveModalVisible(false)}
+          />
+
+          <View style={styles.moveModalCard}>
+            <View style={styles.moveModalBreadcrumbContainer}>
+              {moveTargetBreadcrumbs.map((item, index) => {
+                const isLast = index === moveTargetBreadcrumbs.length - 1;
+
+                return (
+                  <Fragment key={`${item.folder_id}-${index}`}>
+                    <TouchableOpacity
+                      disabled={isLast}
+                      onPress={() => handlePressMoveBreadcrumb(item)}
+                    >
+                      {item.folder_id === null ? (
+                        <MaterialCommunityIcons
+                          name="home-outline"
+                          size={24}
+                          style={
+                            isLast
+                              ? styles.breadcrumbTextActive
+                              : styles.breadcrumbText
+                          }
+                        />
+                      ) : (
+                        <Text
+                          style={
+                            isLast
+                              ? styles.breadcrumbTextActive
+                              : styles.breadcrumbText
+                          }
+                        >
+                          {item.folder_name}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+
+                    {!isLast && (
+                      <Text style={styles.moveModalBreadcrumbDivider}>
+                        {">"}
+                      </Text>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </View>
+
+            <FlatList
+              data={[...moveTargetFolders, ...moveTargetDevices]}
+              keyExtractor={(item) =>
+                "device_id" in item
+                  ? `move-device-${item.device_id}`
+                  : `move-folder-${item.folder_id}`
+              }
+              renderItem={({ item }) => {
+                const isFolder = !("device_id" in item);
+
+                return renderListCard({
+                  item,
+                  selectable: false,
+                  onPress: () => {
+                    if (isFolder) {
+                      handlePressMoveFolder(item);
+                    }
+                  },
+                  showRightIcon: false,
+                });
+              }}
+            />
+
+            <View style={styles.moveModalFooter}>
+              <TouchableOpacity
+                style={styles.moveModalFooterButton}
+                onPress={() => setMoveModalVisible(false)}
+              >
+                <Text style={styles.moveModalCancelText}>취소</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.moveModalFooterButton}
+                onPress={handleConfirmMove}
+              >
+                <Text style={styles.moveModalConfirmText}>여기로 이동</Text>
               </TouchableOpacity>
             </View>
           </View>

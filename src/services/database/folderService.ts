@@ -4,6 +4,7 @@ import {
   Folder,
   FolderContentResponse,
 } from "../../types/database";
+import { deviceService } from "./deviceService";
 import { db } from "./sqlite";
 
 const getBreadcrumbs = async (
@@ -107,8 +108,93 @@ const getFolderContents = async (
   };
 };
 
+const deleteFolder = async (folderId: number) => {
+  const result = await db.runAsync(`DELETE FROM folders WHERE folder_id = ?`, [
+    folderId,
+  ]);
+
+  return result.changes;
+};
+
+const moveFolders = async (
+  folderIds: number[],
+  targetFolderId: number | null,
+) => {
+  if (folderIds.length === 0) return 0;
+
+  const placeholders = folderIds.map(() => "?").join(",");
+
+  const result = await db.runAsync(
+    `
+    UPDATE folders
+    SET parent_folder_id = ?,
+        updated_at = DATETIME('now')
+    WHERE folder_id IN (${placeholders})
+    `,
+    [targetFolderId, ...folderIds],
+  );
+
+  return result.changes;
+};
+
+const isDescendantFolder = async (
+  sourceFolderId: number,
+  targetFolderId: number | null,
+): Promise<boolean> => {
+  if (targetFolderId === null) return false;
+  if (sourceFolderId === targetFolderId) return true;
+
+  let currentFolderId: number | null = targetFolderId;
+
+  while (currentFolderId !== null) {
+    const folder: Pick<Folder, "folder_id" | "parent_folder_id"> | null =
+      await db.getFirstAsync(
+        `
+    SELECT folder_id, parent_folder_id
+    FROM folders
+    WHERE folder_id = ?
+    `,
+        [currentFolderId],
+      );
+    if (!folder) return false;
+    if (folder.parent_folder_id === sourceFolderId) return true;
+
+    currentFolderId = folder.parent_folder_id;
+  }
+
+  return false;
+};
+
+const bulkMoveItems = async ({
+  folderIds,
+  deviceIds,
+  targetFolderId,
+}: {
+  folderIds: number[];
+  deviceIds: number[];
+  targetFolderId: number | null;
+}) => {
+  if (folderIds.length === 0 && deviceIds.length === 0) {
+    throw new Error("이동할 폴더 또는 기기를 하나 이상 선택해야 합니다.");
+  }
+
+  if (folderIds.length > 0) {
+    await moveFolders(folderIds, targetFolderId);
+  }
+
+  if (deviceIds.length > 0) {
+    await deviceService.moveDevices(deviceIds, targetFolderId);
+  }
+
+  return true;
+};
+
 export const folderService = {
   getFolderContents,
   getBreadcrumbs,
   createFolder,
+  deleteFolder,
+  moveFolders,
+  isDescendantFolder,
+  bulkMoveItems,
 };

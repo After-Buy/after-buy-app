@@ -9,6 +9,106 @@ export const itemListStyle = StyleSheet.create({
     paddingTop: spacing.xxl,
   },
 
+  menuBackdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10,
+  },
+
+  menuCard: {
+    position: "absolute",
+    top: 72,
+    left: spacing.xl,
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    minWidth: 140,
+    zIndex: 20,
+    elevation: 6,
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+  },
+
+  menuItemButton: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+
+  menuItemText: {
+    fontSize: typography.body,
+    color: colors.textPrimary,
+  },
+
+  moveModalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: colors.overlay,
+  },
+
+  moveModalBackdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+
+  moveModalCard: {
+    width: "86%",
+    maxHeight: "72%",
+    backgroundColor: colors.white,
+    borderRadius: radius.xl,
+    overflow: "hidden",
+  },
+
+  moveModalBreadcrumbContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+    backgroundColor: colors.white,
+  },
+
+  moveModalBreadcrumbDivider: {
+    marginHorizontal: spacing.sm,
+    color: colors.placeholder,
+  },
+
+  moveModalFooter: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+    backgroundColor: colors.white,
+  },
+
+  moveModalFooterButton: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: spacing.xl,
+  },
+
+  moveModalCancelText: {
+    fontSize: typography.subtitle,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+
+  moveModalConfirmText: {
+    fontSize: typography.subtitle,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -162,14 +262,11 @@ export const itemListStyle = StyleSheet.create({
   },
 
   breadcrumbContainer: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.xxl,
     paddingBottom: spacing.sm,
     flexDirection: "row",
     flexWrap: "wrap",
-  },
-
-  breadcrumbIcon: {
-    marginBottom: -2,
+    alignItems: "center",
   },
 
   breadcrumbText: {
@@ -191,8 +288,8 @@ export const itemListStyle = StyleSheet.create({
 
   itemSelectToggle: {
     position: "absolute",
-    top: 18,
-    left: 18,
+    top: 14,
+    left: 14,
     width: 28,
     height: 28,
     borderRadius: 14,

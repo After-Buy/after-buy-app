@@ -121,4 +121,31 @@ export const deviceService = {
 
     return result.changes;
   },
+
+  deleteDevice: async (deviceId: number) => {
+    const result = await db.runAsync(
+      `DELETE FROM devices WHERE device_id = ?`,
+      [deviceId],
+    );
+
+    return result.changes;
+  },
+
+  moveDevices: async (deviceIds: number[], targetFolderId: number | null) => {
+    if (deviceIds.length === 0) return 0;
+
+    const placeholders = deviceIds.map(() => "?").join(",");
+
+    const result = await db.runAsync(
+      `
+    UPDATE devices
+    SET folder_id = ?,
+        updated_at = DATETIME('now')
+    WHERE device_id IN (${placeholders})
+    `,
+      [targetFolderId, ...deviceIds],
+    );
+
+    return result.changes;
+  },
 };
