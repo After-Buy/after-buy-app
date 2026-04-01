@@ -7,6 +7,7 @@ export type AppHeaderProps = {
   rightText?: string;
   leftComponent?: React.ReactNode;
   rightComponent?: React.ReactNode;
+  isEditing?: boolean;
   onPressLeft?: () => void;
   onPressRight?: () => void;
 };

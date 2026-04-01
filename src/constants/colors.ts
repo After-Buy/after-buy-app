@@ -11,6 +11,8 @@ export const colors = {
   divider: "#C9D1DC",
 
   icon: "#5C667A",
+  iconSavedText: "#363b43",
+  iconSaved: "#b4bed2",
   success: "#69B15B",
   danger: "#F04D4D",
 

@@ -20,10 +20,15 @@ export default function ItemNavigator() {
         component={ItemListScreen}
         initialParams={{ folderId: null, folderName: "전체 자산" }}
       />
-      <Stack.Screen name="ItemDetail" component={ItemDetailScreen} />
+      <Stack.Screen
+        name="ItemDetail"
+        component={ItemDetailScreen}
+        options={{ animation: "fade_from_bottom" }}
+      />
       <Stack.Screen
         name="ItemRegisterModel"
         component={ItemRegisterModelScreen}
+        options={{ animation: "fade" }}
       />
     </Stack.Navigator>
   );

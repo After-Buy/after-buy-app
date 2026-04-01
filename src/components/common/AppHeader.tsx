@@ -15,6 +15,7 @@ export default function AppHeader({
   rightText,
   leftComponent,
   rightComponent,
+  isEditing,
   onPressLeft,
   onPressRight,
 }: AppHeaderProps) {
@@ -47,8 +48,19 @@ export default function AppHeader({
     if (rightComponent) return rightComponent;
     if (rightText) {
       return (
-        <TouchableOpacity onPress={onPressRight} style={styles.textButton}>
-          <Text style={styles.textButtonLabel}>{rightText}</Text>
+        <TouchableOpacity
+          onPress={onPressRight}
+          style={isEditing ? styles.textButtonEditing : styles.textButtonSaved}
+        >
+          <Text
+            style={
+              isEditing
+                ? styles.textButtonLabelEditing
+                : styles.textButtonLabelSaved
+            }
+          >
+            {rightText}
+          </Text>
         </TouchableOpacity>
       );
     }

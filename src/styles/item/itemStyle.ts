@@ -447,7 +447,7 @@ export const itemDetailStyle = StyleSheet.create({
   scrollContent: {
     padding: spacing.lg,
     gap: spacing.lg,
-    paddingBottom: 600,
+    paddingBottom: 300,
   },
 
   card: {
@@ -733,5 +733,120 @@ export const itemDetailStyle = StyleSheet.create({
     fontSize: typography.subtitle,
     color: colors.textPrimary,
     fontWeight: "600",
+  },
+
+  productSummarySection: {
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.xs,
+  },
+
+  productSummaryLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+
+  productSummaryLabel: {
+    fontSize: typography.subtitle,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+
+  productSummaryTitle: {
+    fontSize: typography.title,
+    fontWeight: "700",
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+
+  productSummaryModel: {
+    fontSize: typography.body,
+    color: colors.textSecondary,
+  },
+
+  purchaseCardTopRow: {
+    flexDirection: "row",
+    alignItems: "stretch",
+  },
+
+  purchaseCardTopCell: {
+    flex: 1,
+    justifyContent: "space-between",
+  },
+
+  purchaseCardDivider: {
+    width: 1,
+    backgroundColor: colors.divider,
+    marginHorizontal: spacing.lg,
+  },
+
+  purchaseCardBottomBlock: {
+    marginTop: spacing.xl,
+  },
+
+  purchaseCardLabel: {
+    fontSize: typography.subtitle,
+    fontWeight: "700",
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+  },
+
+  purchaseCardValue: {
+    fontSize: typography.body,
+    color: colors.textPrimary,
+  },
+
+  purchaseCardHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: spacing.sm,
+  },
+
+  purchaseCardPriceValue: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: colors.textPrimary,
+    textAlign: "right",
+    marginTop: spacing.xl,
+  },
+
+  purchaseCardInputBox: {
+    minHeight: 52,
+    borderWidth: 1,
+    borderColor: colors.textSecondary,
+    borderRadius: radius.md,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.lg,
+    justifyContent: "center",
+  },
+
+  purchaseCardDateInput: {
+    minHeight: 52,
+    borderWidth: 1,
+    borderColor: colors.textSecondary,
+    borderRadius: radius.md,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  purchaseCardInputText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: colors.textSecondary,
+  },
+
+  readonlyValueText: {
+    fontSize: typography.body,
+    color: colors.textPrimary,
+    fontWeight: "500",
+  },
+
+  readonlyTextBlock: {
+    paddingVertical: spacing.sm,
   },
 });

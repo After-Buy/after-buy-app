@@ -1,10 +1,6 @@
 import { spacing } from "@/src/constants/spacing";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import {
-  useFocusEffect,
-  useNavigation,
-  useRoute,
-} from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import React, { Fragment, useEffect, useState } from "react";
 import {
   Alert,
@@ -70,16 +66,6 @@ export default function ItemListScreen() {
     initialSelectedDevices,
   );
 
-  const setTabBarVisible = (visible: boolean) => {
-    const parent = navigation.getParent();
-
-    if (!parent) return;
-
-    parent.setOptions({
-      tabBarStyle: visible ? undefined : { display: "none" },
-    });
-  };
-
   const loadData = async () => {
     const { folders, devices, breadcrumbs } =
       await folderService.getFolderContents(1, folderId);
@@ -103,16 +89,6 @@ export default function ItemListScreen() {
     initialSelectedFoldersParam,
     initialSelectedDevicesParam,
   ]);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      setTabBarVisible(!selectionMode);
-
-      return () => {
-        setTabBarVisible(true);
-      };
-    }, [selectionMode]),
-  );
 
   const breadcrumbItems: BreadcrumbItem[] = [
     { folder_id: null, folder_name: "root" },

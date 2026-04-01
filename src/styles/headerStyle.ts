@@ -37,7 +37,7 @@ export const headerStyles = StyleSheet.create({
     padding: spacing.sm,
   },
 
-  textButton: {
+  textButtonEditing: {
     minWidth: 88,
     height: 44,
     paddingHorizontal: spacing.lg,
@@ -48,9 +48,26 @@ export const headerStyles = StyleSheet.create({
     alignSelf: "flex-end",
   },
 
-  textButtonLabel: {
+  textButtonSaved: {
+    minWidth: 88,
+    height: 44,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.iconSaved,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "flex-end",
+  },
+
+  textButtonLabelEditing: {
     fontSize: typography.body,
     fontWeight: "700",
     color: colors.white,
+  },
+
+  textButtonLabelSaved: {
+    fontSize: typography.body,
+    fontWeight: "700",
+    color: colors.iconSavedText,
   },
 });

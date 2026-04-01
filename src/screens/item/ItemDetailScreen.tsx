@@ -1,3 +1,4 @@
+import { typography } from "@/src/constants/typography";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -14,6 +15,7 @@ import {
   ScrollView,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import AppHeader from "../../components/common/AppHeader";
@@ -523,6 +525,7 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
     const isEditable = options?.editable ?? isEditMode;
     const required = options?.required ?? false;
     const showRequiredMark = required && isEditMode;
+    const displayValue = value || options?.placeholder || "";
     const isPressable = isEditMode && isEditable;
 
     return (
@@ -532,55 +535,233 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
           {showRequiredMark && <Text style={styles.required}> *</Text>}
         </Text>
 
-        <Pressable
-          onPress={() => {
-            if (isPressable) openFieldModal(fieldKey);
-          }}
-          style={[
-            styles.input,
-            !isEditable && styles.readonlyInput,
-            options?.multiline && styles.multilineInput,
-          ]}
-        >
-          <Text
+        {isPressable ? (
+          <Pressable
+            onPress={() => {
+              if (isPressable) openFieldModal(fieldKey);
+            }}
             style={[
-              styles.inputText,
-              !isEditable && styles.readonlyInputText,
-              !value && styles.placeholderText,
+              styles.input,
+              !isEditable && styles.readonlyInput,
+              options?.multiline && styles.multilineInput,
             ]}
-            numberOfLines={options?.multiline ? 4 : 1}
           >
-            {value || options?.placeholder || ""}
-          </Text>
-        </Pressable>
+            <Text
+              style={[
+                styles.inputText,
+                !isEditable && styles.readonlyInputText,
+                !value && styles.placeholderText,
+              ]}
+              numberOfLines={options?.multiline ? 4 : 1}
+            >
+              {value || options?.placeholder || ""}
+            </Text>
+          </Pressable>
+        ) : (
+          <View
+            style={options?.multiline ? styles.readonlyTextBlock : undefined}
+          >
+            <Text
+              style={[
+                styles.readonlyValueText,
+                !value && styles.placeholderText,
+              ]}
+              numberOfLines={options?.multiline ? 4 : 1}
+            >
+              {displayValue}
+            </Text>
+          </View>
+        )}
       </View>
     );
   };
 
-  const renderPurchaseDateField = () => {
-    const value = draft?.purchase_date ?? "";
+  const renderProductSummarySection = () => {
+    return (
+      <View style={styles.productSummarySection}>
+        <View style={styles.productSummaryLabelRow}>
+          <MaterialCommunityIcons
+            name="gift-outline"
+            size={20}
+            color={colors.textSecondary}
+          />
+          <Text style={styles.productSummaryLabel}>
+            상품명{isEditMode && <Text style={styles.required}> *</Text>}
+          </Text>
+        </View>
+        <Pressable
+          onPress={() => {
+            if (isEditMode) openFieldModal("product_name");
+          }}
+        >
+          <Text style={styles.productSummaryTitle}>
+            {draft?.product_name || "상품명을 입력하세요"}
+          </Text>
+        </Pressable>
+
+        <Text
+          style={[
+            styles.productSummaryModel,
+            !draft?.model_name && styles.placeholderText,
+          ]}
+        >
+          모델명: {draft?.model_name || "모델명이 없습니다"}
+        </Text>
+      </View>
+    );
+  };
+
+  const renderPurchaseInfoCard = () => {
+    const purchaseDate = draft?.purchase_date ?? "";
+    const purchasePrice = draft?.purchase_price ?? "";
+    const purchaseStore = draft?.purchase_store ?? "";
 
     return (
       <View style={styles.card}>
-        <Text style={styles.label}>
-          구매일{isEditMode && <Text style={styles.required}> *</Text>}
-        </Text>
+        <View style={styles.purchaseCardTopRow}>
+          <View style={styles.purchaseCardTopCell}>
+            <Text style={styles.purchaseCardLabel}>
+              구매일{isEditMode && <Text style={styles.required}> *</Text>}
+            </Text>
 
-        <Pressable
-          onPress={openPurchaseDateModal}
-          style={[styles.input, !isEditMode && styles.readonlyInput]}
-        >
-          <Text
-            style={[
-              styles.inputText,
-              !isEditMode && styles.readonlyInputText,
-              !value && styles.placeholderText,
-            ]}
-          >
-            {value || "YYYY-MM-DD"}
-          </Text>
-        </Pressable>
+            {isEditMode ? (
+              <Pressable
+                onPress={openPurchaseDateModal}
+                style={styles.purchaseCardDateInput}
+              >
+                <Text
+                  style={[
+                    styles.purchaseCardInputText,
+                    !purchaseDate && styles.placeholderText,
+                  ]}
+                >
+                  {purchaseDate || "YYYY-MM-DD"}
+                </Text>
+
+                <MaterialCommunityIcons
+                  name="calendar-month-outline"
+                  size={24}
+                  color={colors.textSecondary}
+                />
+              </Pressable>
+            ) : (
+              <Text
+                style={[
+                  styles.purchaseCardValue,
+                  !purchaseDate && styles.placeholderText,
+                ]}
+              >
+                {purchaseDate || "YYYY-MM-DD"}
+              </Text>
+            )}
+          </View>
+
+          <View style={styles.purchaseCardDivider} />
+
+          <View style={styles.purchaseCardTopCell}>
+            <Text style={styles.purchaseCardLabel}>
+              구매가{isEditMode && <Text style={styles.required}> *</Text>}
+            </Text>
+
+            {isEditMode ? (
+              <Pressable
+                onPress={() => openFieldModal("purchase_price")}
+                style={styles.purchaseCardInputBox}
+              >
+                <Text
+                  style={[
+                    styles.purchaseCardInputText,
+                    !purchasePrice && styles.placeholderText,
+                  ]}
+                >
+                  {purchasePrice
+                    ? `${Number(purchasePrice).toLocaleString()}원`
+                    : "예: 500000"}
+                </Text>
+              </Pressable>
+            ) : (
+              <Text
+                style={[
+                  styles.purchaseCardValue,
+                  !purchasePrice && styles.placeholderText,
+                ]}
+              >
+                {purchasePrice
+                  ? `${Number(purchasePrice).toLocaleString()}원`
+                  : "예: 500000"}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.purchaseCardBottomBlock}>
+          <Text style={styles.purchaseCardLabel}>구매처</Text>
+
+          {isEditMode ? (
+            <Pressable
+              onPress={() => openFieldModal("purchase_store")}
+              style={styles.purchaseCardInputBox}
+            >
+              <Text
+                style={[
+                  styles.purchaseCardInputText,
+                  !purchaseStore && styles.placeholderText,
+                ]}
+              >
+                {purchaseStore || "구매처를 입력하세요"}
+              </Text>
+            </Pressable>
+          ) : (
+            <Text
+              style={[
+                styles.purchaseCardValue,
+                !purchaseStore && styles.placeholderText,
+              ]}
+            >
+              {purchaseStore || "구매처를 입력하세요"}
+            </Text>
+          )}
+        </View>
       </View>
+    );
+  };
+
+  const renderNearCenterButton = () => {
+    return (
+      <TouchableOpacity
+        style={[styles.card, { height: 80, justifyContent: "center" }]}
+        onPress={() => console.log("인근 서비스센터 조회")}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <MaterialCommunityIcons
+              name="map-marker-outline"
+              size={22}
+              color={colors.textSecondary}
+            />
+            <Text
+              style={{
+                fontSize: typography.body,
+                color: colors.textPrimary,
+                fontWeight: "600",
+              }}
+            >
+              가까운 서비스 센터
+            </Text>
+          </View>
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={22}
+            color={colors.textSecondary}
+          />
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -594,20 +775,27 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
           무상 보증 기간{isEditMode && <Text style={styles.required}> *</Text>}
         </Text>
 
-        <Pressable
-          onPress={openWarrantyModal}
-          style={[styles.input, !isEditMode && styles.readonlyInput]}
-        >
+        {isEditMode ? (
+          <Pressable onPress={openWarrantyModal} style={styles.input}>
+            <Text
+              style={[
+                styles.inputText,
+                !display.hasValue && styles.placeholderText,
+              ]}
+            >
+              {display.hasValue ? display.text : "보증 기간을 선택하세요"}
+            </Text>
+          </Pressable>
+        ) : (
           <Text
             style={[
-              styles.inputText,
-              !isEditMode && styles.readonlyInputText,
+              styles.readonlyValueText,
               !display.hasValue && styles.placeholderText,
             ]}
           >
             {display.hasValue ? display.text : "보증 기간을 선택하세요"}
           </Text>
-        </Pressable>
+        )}
 
         {warrantyInfo && (
           <View style={styles.warrantyInfoWrap}>
@@ -697,6 +885,7 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
           title="세부 정보"
           leftType="back"
           rightText={isSaving ? "저장 중..." : buttonLabel}
+          isEditing={isEditMode}
           onPressLeft={() => navigation.goBack()}
           onPressRight={handlePressAction}
         />
@@ -707,34 +896,16 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
         showsVerticalScrollIndicator={false}
       >
         {renderImageCard()}
-        {renderField("product_name", draft.product_name, {
-          required: true,
-          placeholder: "상품명을 입력하세요",
-        })}
-
-        {renderField("model_name", draft.model_name, {
-          required: true,
-          editable: false,
-        })}
+        {renderProductSummarySection()}
 
         {renderField("brand", draft.brand, {
           required: true,
           placeholder: "브랜드를 입력하세요",
         })}
 
-        {renderPurchaseDateField()}
-
-        {renderField("purchase_price", draft.purchase_price, {
-          required: true,
-          placeholder: "예: 500000",
-          keyboardType: "numeric",
-        })}
-
         {renderWarrantyField()}
 
-        {renderField("purchase_store", draft.purchase_store, {
-          placeholder: "구매처를 입력하세요",
-        })}
+        {renderPurchaseInfoCard()}
 
         {renderField("product_link_url", draft.product_link_url, {
           placeholder: "링크를 입력하세요",
@@ -748,6 +919,8 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
           placeholder: "메모를 입력하세요",
           multiline: true,
         })}
+
+        {!isEditMode && renderNearCenterButton()}
       </ScrollView>
       {dateModalVisible && (
         <DateTimePicker
