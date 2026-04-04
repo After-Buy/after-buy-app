@@ -61,7 +61,7 @@ export const itemListStyle = StyleSheet.create({
 
   moveModalCard: {
     width: "86%",
-    maxHeight: "72%",
+    height: "70%",
     backgroundColor: colors.white,
     borderRadius: radius.xl,
     overflow: "hidden",
@@ -189,10 +189,26 @@ export const itemListStyle = StyleSheet.create({
   },
 
   emptyText: {
-    marginTop: 48,
+    marginTop: spacing.xs,
     textAlign: "center",
     fontSize: 15,
     color: "#9CA3AF",
+    lineHeight: 22,
+  },
+
+  emptyTitle: {
+    marginTop: spacing.md,
+    fontSize: typography.subtitle,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+
+  emptyDescription: {
+    marginTop: spacing.xs,
+    textAlign: "center",
+    fontSize: 15,
+    color: colors.textSecondary,
+    lineHeight: 22,
   },
 
   fab: {
@@ -270,13 +286,13 @@ export const itemListStyle = StyleSheet.create({
   },
 
   breadcrumbText: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
     fontWeight: "400",
   },
 
   breadcrumbTextActive: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textPrimary,
     fontWeight: "700",
   },
@@ -284,6 +300,7 @@ export const itemListStyle = StyleSheet.create({
   breadcrumbDivider: {
     marginHorizontal: 6,
     color: "#9CA3AF",
+    fontSize: 15,
   },
 
   itemSelectToggle: {
@@ -325,6 +342,46 @@ export const itemListStyle = StyleSheet.create({
     marginTop: 6,
     fontSize: 15,
     color: "#475467",
+  },
+
+  highlightText: {
+    backgroundColor: "#FFF3B0",
+    color: colors.textPrimary,
+    fontWeight: "700",
+  },
+
+  searchHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
+  },
+
+  searchBackButton: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  searchInputWrapper: {
+    flex: 1,
+    height: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.divider,
+    borderRadius: radius.lg,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
+  },
+
+  searchInput: {
+    flex: 1,
+    fontSize: typography.body,
+    color: colors.textPrimary,
   },
 });
 
@@ -821,19 +878,19 @@ export const itemDetailStyle = StyleSheet.create({
   purchaseCardDateInput: {
     minHeight: 52,
     borderWidth: 1,
-    borderColor: colors.textSecondary,
+    borderColor: colors.textPrimary,
     borderRadius: radius.md,
     backgroundColor: colors.white,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
 
   purchaseCardInputText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "500",
-    color: colors.textSecondary,
+    color: colors.textPrimary,
   },
 
   readonlyValueText: {

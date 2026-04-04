@@ -3,7 +3,7 @@ import CutoutOverlay from "@/src/components/OCR/CutoutOverlay";
 import { ocrStyles as styles } from "@/src/styles/OCRStyle";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import React, { useRef, useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -28,6 +28,20 @@ export default function OCRCameraScreen({ navigation, route }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [enableTorch, setEnableTorch] = useState(false);
   const insets = useSafeAreaInsets();
+
+  useLayoutEffect(() => {
+    const parentTab = navigation.getParent();
+
+    parentTab?.setOptions({
+      tabBarStyle: { display: "none" },
+    });
+
+    return () => {
+      parentTab?.setOptions({
+        tabBarStyle: undefined,
+      });
+    };
+  }, [navigation]);
 
   const guideText =
     ocrType === "MODEL"

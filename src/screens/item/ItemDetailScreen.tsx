@@ -3,7 +3,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -139,6 +139,20 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
 
     init();
   }, [deviceId, isCreateMode, navigation, route.params]);
+
+  useLayoutEffect(() => {
+    const parentTab = navigation.getParent();
+
+    parentTab?.setOptions({
+      tabBarStyle: { display: "none" },
+    });
+
+    return () => {
+      parentTab?.setOptions({
+        tabBarStyle: undefined,
+      });
+    };
+  }, [navigation]);
 
   const buttonLabel = useMemo(() => {
     return isEditMode ? "저장" : "수정";
@@ -345,7 +359,7 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
     }
 
     if (Number.isNaN(warrantyMonths) || warrantyMonths <= 0) {
-      Alert.alert("안내", "보증기간은 개월 수로 입력해주세요.");
+      Alert.alert("안내", "보증기간을 입력해주세요.");
       return false;
     }
 
@@ -637,6 +651,7 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
                 >
                   {purchaseDate || "YYYY-MM-DD"}
                 </Text>
+                <Text> </Text>
 
                 <MaterialCommunityIcons
                   name="calendar-month-outline"

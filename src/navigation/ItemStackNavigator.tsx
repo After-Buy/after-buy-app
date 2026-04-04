@@ -20,6 +20,7 @@ export default function ItemNavigator() {
         name="ItemList"
         component={ItemListScreen}
         initialParams={{ folderId: null, folderName: "전체 자산" }}
+        options={{ animation: "fade" }}
       />
       <Stack.Screen
         name="ItemDetail"

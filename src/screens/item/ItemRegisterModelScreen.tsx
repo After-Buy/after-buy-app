@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import {
   Alert,
   Modal,
@@ -34,6 +34,20 @@ export default function ItemRegisterModelScreen({ navigation, route }: Props) {
       setModelName(result.model_name);
     }
   }, [route.params?.ocrResult]);
+
+  useLayoutEffect(() => {
+    const parentTab = navigation.getParent();
+
+    parentTab?.setOptions({
+      tabBarStyle: { display: "none" },
+    });
+
+    return () => {
+      parentTab?.setOptions({
+        tabBarStyle: undefined,
+      });
+    };
+  }, [navigation]);
 
   const handleNext = () => {
     const trimmed = modelName.trim();

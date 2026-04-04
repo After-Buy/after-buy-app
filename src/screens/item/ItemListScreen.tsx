@@ -1,7 +1,7 @@
 import { spacing } from "@/src/constants/spacing";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useLayoutEffect, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -66,6 +66,24 @@ export default function ItemListScreen() {
     initialSelectedDevices,
   );
 
+  const [searchMode, setSearchMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useLayoutEffect(() => {
+    const parent = navigation.getParent();
+
+    parent?.setOptions({
+      tabBarStyle:
+        selectionMode || searchMode ? { display: "none" } : undefined,
+    });
+
+    return () => {
+      parent?.setOptions({
+        tabBarStyle: undefined,
+      });
+    };
+  }, [navigation, searchMode, selectionMode]);
+
   const loadData = async () => {
     const { folders, devices, breadcrumbs } =
       await folderService.getFolderContents(1, folderId);
@@ -90,10 +108,64 @@ export default function ItemListScreen() {
     initialSelectedDevicesParam,
   ]);
 
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+
+  const filteredFolders = searchMode
+    ? folders.filter((folder) =>
+        folder.folder_name.toLowerCase().includes(normalizedQuery),
+      )
+    : folders;
+
+  const filteredDevices = searchMode
+    ? devices.filter((device) =>
+        device.product_name.toLowerCase().includes(normalizedQuery),
+      )
+    : devices;
+
+  const displayData =
+    searchMode && normalizedQuery.length > 0
+      ? [...filteredFolders, ...filteredDevices]
+      : [...folders, ...devices];
+
   const breadcrumbItems: BreadcrumbItem[] = [
     { folder_id: null, folder_name: "root" },
     ...breadcrumbs,
   ];
+
+  const isSearching = searchMode && normalizedQuery.length > 0;
+  const hasNoSearchResult = isSearching && displayData.length === 0;
+  const hasNoDefaultData =
+    !searchMode && folders.length === 0 && devices.length === 0;
+
+  const escapeRegExp = (value: string) =>
+    value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const renderHighlightedText = (text: string, query: string) => {
+    if (!query.trim()) {
+      return <Text style={styles.titleText}>{text}</Text>;
+    }
+
+    const escapedQuery = escapeRegExp(query.trim());
+    const regex = new RegExp(`(${escapedQuery})`, "ig");
+    const parts = text.split(regex);
+
+    return (
+      <Text style={styles.titleText}>
+        {parts.map((part, index) => {
+          const isMatch = part.toLowerCase() === query.trim().toLowerCase();
+
+          return (
+            <Text
+              key={`${part}-${index}`}
+              style={isMatch ? styles.highlightText : undefined}
+            >
+              {part}
+            </Text>
+          );
+        })}
+      </Text>
+    );
+  };
 
   const handlePressBreadcrumb = (item: BreadcrumbItem) => {
     if (item.folder_id === null) {
@@ -395,9 +467,10 @@ export default function ItemListScreen() {
         <View style={styles.textContainer}>
           {!isFolder && <Text style={styles.codeText}>{item.model_name}</Text>}
 
-          <Text style={styles.titleText}>
-            {isFolder ? item.folder_name : item.product_name}
-          </Text>
+          {renderHighlightedText(
+            isFolder ? item.folder_name : item.product_name,
+            searchQuery,
+          )}
 
           {isFolder ? (
             <Text style={styles.folderCountText}>
@@ -461,46 +534,90 @@ export default function ItemListScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.headerArea}>
-        <AppHeader
-          title="아이템"
-          leftType={selectionMode ? "none" : "menu"}
-          rightType={selectionMode ? "none" : "search"}
-          leftComponent={
-            selectionMode ? (
-              <TouchableOpacity
-                onPress={toggleSelectAll}
-                style={styles.selectionHeaderButton}
-              >
-                <View
-                  style={[
-                    styles.selectionCircle,
-                    isAllSelected && styles.selectionCircleActive,
-                  ]}
+        {searchMode ? (
+          <View style={[styles.searchHeader, { paddingTop: insets.top }]}>
+            <TouchableOpacity
+              onPress={() => {
+                setSearchMode(false);
+                setSearchQuery("");
+              }}
+              style={styles.searchBackButton}
+            >
+              <Ionicons
+                name="arrow-back"
+                size={24}
+                color={colors.textPrimary}
+              />
+            </TouchableOpacity>
+
+            <View style={styles.searchInputWrapper}>
+              <MaterialCommunityIcons
+                name="magnify"
+                size={20}
+                color={colors.textSecondary}
+              />
+              <TextInput
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="폴더 또는 아이템 검색"
+                autoFocus
+                style={styles.searchInput}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <Ionicons
+                    name="close-circle"
+                    size={18}
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        ) : (
+          <AppHeader
+            title="아이템"
+            leftType={selectionMode ? "none" : "menu"}
+            rightType={selectionMode ? "none" : "search"}
+            leftComponent={
+              selectionMode ? (
+                <TouchableOpacity
+                  onPress={toggleSelectAll}
+                  style={styles.selectionHeaderButton}
                 >
-                  {isAllSelected && (
-                    <Ionicons name="checkmark" size={18} color="white" />
-                  )}
-                </View>
-              </TouchableOpacity>
-            ) : undefined
-          }
-          rightComponent={
-            selectionMode ? (
-              <TouchableOpacity
-                onPress={exitSelectionMode}
-                style={styles.headerTextButton}
-              >
-                <Text style={styles.headerTextButtonLabel}>취소</Text>
-              </TouchableOpacity>
-            ) : undefined
-          }
-          onPressLeft={() => {
-            setMenuVisible((prev) => !prev);
-          }}
-          onPressRight={() => {
-            console.log("검색 버튼 클릭");
-          }}
-        />
+                  <View
+                    style={[
+                      styles.selectionCircle,
+                      isAllSelected && styles.selectionCircleActive,
+                    ]}
+                  >
+                    {isAllSelected && (
+                      <Ionicons name="checkmark" size={18} color="white" />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ) : undefined
+            }
+            rightComponent={
+              selectionMode ? (
+                <TouchableOpacity
+                  onPress={exitSelectionMode}
+                  style={styles.headerTextButton}
+                >
+                  <Text style={styles.headerTextButtonLabel}>취소</Text>
+                </TouchableOpacity>
+              ) : undefined
+            }
+            onPressLeft={() => {
+              setMenuVisible((prev) => !prev);
+            }}
+            onPressRight={() => {
+              setMenuVisible(false);
+              setSearchMode(true);
+              setSearchQuery("");
+            }}
+          />
+        )}
         {menuVisible && (
           <>
             <Pressable
@@ -539,44 +656,53 @@ export default function ItemListScreen() {
           </>
         )}
       </View>
-      <View style={styles.breadcrumbContainer}>
-        {breadcrumbItems.map((item, index) => {
-          const isLast = index === breadcrumbItems.length - 1;
+      {!searchMode && (
+        <View style={styles.breadcrumbContainer}>
+          {breadcrumbItems.map((item, index) => {
+            const isLast = index === breadcrumbItems.length - 1;
 
-          return (
-            <Fragment key={`${item.folder_id}-${index}`}>
-              <TouchableOpacity
-                disabled={isLast}
-                onPress={() => handlePressBreadcrumb(item)}
-              >
-                {item.folder_id === null ? (
+            return (
+              <Fragment key={`${item.folder_id}-${index}`}>
+                <TouchableOpacity
+                  disabled={isLast}
+                  onPress={() => handlePressBreadcrumb(item)}
+                >
+                  {item.folder_id === null ? (
+                    <MaterialCommunityIcons
+                      name="home"
+                      style={[
+                        isLast
+                          ? styles.breadcrumbTextActive
+                          : styles.breadcrumbText,
+                        { fontSize: 25 },
+                      ]}
+                    />
+                  ) : (
+                    <Text
+                      style={
+                        isLast
+                          ? styles.breadcrumbTextActive
+                          : styles.breadcrumbText
+                      }
+                    >
+                      {item.folder_name}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+
+                {!isLast && (
                   <MaterialCommunityIcons
-                    name="home-outline"
-                    size={25}
-                    style={
-                      isLast
-                        ? styles.breadcrumbTextActive
-                        : styles.breadcrumbText
-                    }
+                    name="arrow-right-drop-circle"
+                    style={styles.breadcrumbDivider}
                   />
-                ) : (
-                  <Text
-                    style={{
-                      color: isLast ? colors.textPrimary : colors.textSecondary,
-                    }}
-                  >
-                    {item.folder_name}
-                  </Text>
                 )}
-              </TouchableOpacity>
-
-              {!isLast && <Text style={styles.breadcrumbDivider}>{">"}</Text>}
-            </Fragment>
-          );
-        })}
-      </View>
+              </Fragment>
+            );
+          })}
+        </View>
+      )}
       <FlatList
-        data={[...folders, ...devices]}
+        data={displayData}
         keyExtractor={(item) =>
           "device_id" in item
             ? `device-${item.device_id}`
@@ -585,14 +711,28 @@ export default function ItemListScreen() {
         renderItem={renderItem}
         contentContainerStyle={[
           styles.listContent,
-          folders.length === 0 && devices.length === 0 && styles.emptyContainer,
+          displayData.length === 0 && styles.emptyContainer,
         ]}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>등록된 항목이 없습니다.</Text>
+          hasNoSearchResult ? (
+            <View style={styles.emptyContainer}>
+              <MaterialCommunityIcons
+                name="magnify-close"
+                size={48}
+                color="#9CA3AF"
+              />
+              <Text style={styles.emptyTitle}>검색 결과가 없습니다.</Text>
+              <Text style={styles.emptyDescription}>
+                다른 키워드로 다시 검색해보세요.
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.emptyText}>등록된 항목이 없습니다.</Text>
+          )
         }
       />
 
-      {!selectionMode && (
+      {!selectionMode && !searchMode && (
         <TouchableOpacity
           style={[styles.fab, { bottom: spacing.xxxxl }]}
           onPress={() => navigation.navigate("ItemRegisterModel", { folderId })}
@@ -751,13 +891,13 @@ export default function ItemListScreen() {
                     >
                       {item.folder_id === null ? (
                         <MaterialCommunityIcons
-                          name="home-outline"
-                          size={24}
-                          style={
+                          name="home"
+                          style={[
                             isLast
                               ? styles.breadcrumbTextActive
-                              : styles.breadcrumbText
-                          }
+                              : styles.breadcrumbText,
+                            { fontSize: 25 },
+                          ]}
                         />
                       ) : (
                         <Text
@@ -773,37 +913,39 @@ export default function ItemListScreen() {
                     </TouchableOpacity>
 
                     {!isLast && (
-                      <Text style={styles.moveModalBreadcrumbDivider}>
-                        {">"}
-                      </Text>
+                      <MaterialCommunityIcons
+                        name="arrow-right-drop-circle"
+                        style={styles.breadcrumbDivider}
+                      />
                     )}
                   </Fragment>
                 );
               })}
             </View>
+            <View style={{ flex: 1 }}>
+              <FlatList
+                data={[...moveTargetFolders, ...moveTargetDevices]}
+                keyExtractor={(item) =>
+                  "device_id" in item
+                    ? `move-device-${item.device_id}`
+                    : `move-folder-${item.folder_id}`
+                }
+                renderItem={({ item }) => {
+                  const isFolder = !("device_id" in item);
 
-            <FlatList
-              data={[...moveTargetFolders, ...moveTargetDevices]}
-              keyExtractor={(item) =>
-                "device_id" in item
-                  ? `move-device-${item.device_id}`
-                  : `move-folder-${item.folder_id}`
-              }
-              renderItem={({ item }) => {
-                const isFolder = !("device_id" in item);
-
-                return renderListCard({
-                  item,
-                  selectable: false,
-                  onPress: () => {
-                    if (isFolder) {
-                      handlePressMoveFolder(item);
-                    }
-                  },
-                  showRightIcon: false,
-                });
-              }}
-            />
+                  return renderListCard({
+                    item,
+                    selectable: false,
+                    onPress: () => {
+                      if (isFolder) {
+                        handlePressMoveFolder(item);
+                      }
+                    },
+                    showRightIcon: false,
+                  });
+                }}
+              />
+            </View>
 
             <View style={styles.moveModalFooter}>
               <TouchableOpacity
