@@ -22,9 +22,9 @@ import AppHeader from "../../components/common/AppHeader";
 import { colors } from "../../constants/colors";
 import { deviceService } from "../../services/database/deviceService";
 import { itemDetailStyle as styles } from "../../styles/item/itemStyle";
-import { ItemStackParamList } from "../../types/navigation";
+import { RootStackParamList } from "../../types/navigation";
 
-type Props = NativeStackScreenProps<ItemStackParamList, "ItemDetail">;
+type Props = NativeStackScreenProps<RootStackParamList, "ItemDetail">;
 
 type DeviceDraft = {
   folder_id: number | null;
@@ -868,7 +868,7 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
 
     const asset = result.assets[0];
 
-    updateField("image_url", asset.uri); // 🔥 핵심
+    updateField("image_url", asset.uri);
     setImageActionVisible(false);
   };
   const handleTakePhoto = async () => {
@@ -902,7 +902,9 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
           leftType="back"
           rightText={isSaving ? "저장 중..." : buttonLabel}
           isEditing={isEditMode}
-          onPressLeft={() => navigation.goBack()}
+          onPressLeft={() => {
+            navigation.goBack();
+          }}
           onPressRight={handlePressAction}
         />
       </View>

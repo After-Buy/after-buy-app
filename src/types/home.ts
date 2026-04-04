@@ -1,7 +1,7 @@
 export interface AssetSummary {
   assetCount: number;
   totalValue: number;
-  expiredCount: number;
+  expiringSoonCount: number;
 }
 
 export interface HomeItem {

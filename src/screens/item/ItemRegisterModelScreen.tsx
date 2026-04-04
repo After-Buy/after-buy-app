@@ -15,11 +15,11 @@ import {
   itemDetailStyle as Modalstyles,
   itemRegisterModelStyle as styles,
 } from "../../styles/item/itemStyle";
-import { ItemStackParamList } from "../../types/navigation";
+import { RootStackParamList } from "../../types/navigation";
 
 import * as ImagePicker from "expo-image-picker";
 
-type Props = NativeStackScreenProps<ItemStackParamList, "ItemRegisterModel">;
+type Props = NativeStackScreenProps<RootStackParamList, "ItemRegisterModel">;
 
 export default function ItemRegisterModelScreen({ navigation, route }: Props) {
   const { folderId = null, folderName = "전체 자산" } = route.params || {};

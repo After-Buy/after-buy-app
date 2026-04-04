@@ -26,7 +26,7 @@ export default function AssetSummaryRow({ summary }: Props) {
 
       <View style={homeStyles.summaryItem}>
         <Text style={homeStyles.summaryValue}>
-          보증 만료 {summary.expiredCount}건
+          보증 만료 임박 {summary.expiringSoonCount}건
         </Text>
       </View>
     </View>

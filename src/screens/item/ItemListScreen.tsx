@@ -514,7 +514,7 @@ export default function ItemListScreen() {
       if (isFolder) {
         moveToFolder(item.folder_id, item.folder_name);
       } else {
-        navigation.navigate("ItemDetail", {
+        navigation.getParent()?.getParent()?.navigate("ItemDetail", {
           deviceId: item.device_id,
           mode: "view",
         });
@@ -735,7 +735,12 @@ export default function ItemListScreen() {
       {!selectionMode && !searchMode && (
         <TouchableOpacity
           style={[styles.fab, { bottom: spacing.xxxxl }]}
-          onPress={() => navigation.navigate("ItemRegisterModel", { folderId })}
+          onPress={() =>
+            navigation.getParent()?.getParent()?.navigate("ItemRegisterModel", {
+              folderId,
+              folderName,
+            })
+          }
         >
           <Ionicons name="add" size={28} color={colors.icon} />
         </TouchableOpacity>

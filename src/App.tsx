@@ -1,3 +1,4 @@
+import { NavigationContainer } from "@react-navigation/native";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import RootNavigator from "./navigation/RootNavigator";
@@ -25,5 +26,9 @@ export default function App() {
       </View>
     );
   }
-  return <RootNavigator />;
+  return (
+    <NavigationContainer>
+      <RootNavigator />
+    </NavigationContainer>
+  );
 }

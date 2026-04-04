@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { homeStyles } from "../../../styles/homeStyle";
@@ -32,7 +33,13 @@ export default function HomeAssetSection({
       ))}
 
       <Pressable style={homeStyles.viewAllButton} onPress={onPressViewAll}>
-        <Text style={homeStyles.viewAllText}>모두 보기 {">"}</Text>
+        <Text style={homeStyles.viewAllText}>
+          모두 보기{" "}
+          <MaterialCommunityIcons
+            name="arrow-right-drop-circle-outline"
+            size={20}
+          />
+        </Text>
       </Pressable>
     </View>
   );

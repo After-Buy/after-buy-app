@@ -1,5 +1,7 @@
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text, View } from "react-native";
+import { colors } from "../../../constants/colors";
 import { homeStyles } from "../../../styles/homeStyle";
 import { HomeItem } from "../../../types/home";
 
@@ -12,7 +14,15 @@ export default function RecentItemCard({ item, onPress }: Props) {
   return (
     <View style={homeStyles.recentItemRow}>
       <View style={homeStyles.recentThumbnail}>
-        <Text>🖼️</Text>
+        {item.imageUrl ? (
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={homeStyles.recentThumbnailImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <Ionicons name="image-outline" size={28} color={colors.icon} />
+        )}
       </View>
 
       <View style={homeStyles.recentItemInfo}>
