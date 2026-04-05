@@ -261,29 +261,39 @@ export const itemListStyle = StyleSheet.create({
     lineHeight: 22,
   },
 
+  headerMenuModalOverlay: {
+    flex: 1,
+  },
+
+  headerMenuBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "transparent",
+  },
+
+  headerMenuCard: {
+    position: "absolute",
+    top: spacing.xl,
+    left: spacing.xl,
+  },
+
   fab: {
     position: "absolute",
     right: spacing.xl,
+    bottom: spacing.xxxxl,
 
-    width: spacing.xxxl * 2,
-    height: spacing.xxxl * 2,
-    borderRadius: radius.pill,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
 
-    backgroundColor: colors.white,
-    borderWidth: 2,
-    borderColor: "#64748B",
-
+    backgroundColor: colors.primary, // ⭐ 핵심
     alignItems: "center",
     justifyContent: "center",
 
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 8,
   },
 
   thumbnailImage: {

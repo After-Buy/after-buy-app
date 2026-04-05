@@ -777,43 +777,6 @@ export default function ItemListScreen() {
             }}
           />
         )}
-        {menuVisible && (
-          <>
-            <Pressable
-              style={styles.menuBackdrop}
-              onPress={() => setMenuVisible(false)}
-            />
-
-            <View style={styles.menuCard}>
-              <TouchableOpacity
-                style={{ paddingHorizontal: 16, paddingVertical: 12 }}
-                onPress={() => {
-                  setMenuVisible(false);
-                  setSelectedFolders([]);
-                  setSelectedDevices([]);
-                  setSelectionMode(true);
-
-                  navigation.setParams({
-                    selectionMode: true,
-                    selectedFolders: [],
-                    selectedDevices: [],
-                  });
-                }}
-              >
-                <Text style={styles.menuItemText}>선택</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.menuItemButton}
-                onPress={() => {
-                  setMenuVisible(false);
-                  setFolderModalVisible(true);
-                }}
-              >
-                <Text style={styles.menuItemText}>폴더 추가</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
       </View>
       {!searchMode && (
         <View style={styles.breadcrumbContainer}>
@@ -904,7 +867,7 @@ export default function ItemListScreen() {
             })
           }
         >
-          <Ionicons name="add" size={28} color={colors.icon} />
+          <Ionicons name="add" size={28} color="white" />
         </TouchableOpacity>
       )}
 
@@ -939,6 +902,49 @@ export default function ItemListScreen() {
           </TouchableOpacity>
         </View>
       )}
+      <Modal
+        visible={menuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <View style={styles.headerMenuModalOverlay}>
+          <Pressable
+            style={styles.headerMenuBackdrop}
+            onPress={() => setMenuVisible(false)}
+          />
+
+          <View style={[styles.menuCard, styles.headerMenuCard]}>
+            <TouchableOpacity
+              style={styles.menuItemButton}
+              onPress={() => {
+                setMenuVisible(false);
+                setSelectedFolders([]);
+                setSelectedDevices([]);
+                setSelectionMode(true);
+
+                navigation.setParams({
+                  selectionMode: true,
+                  selectedFolders: [],
+                  selectedDevices: [],
+                });
+              }}
+            >
+              <Text style={styles.menuItemText}>선택</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItemButton}
+              onPress={() => {
+                setMenuVisible(false);
+                setFolderModalVisible(true);
+              }}
+            >
+              <Text style={styles.menuItemText}>폴더 추가</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       <Modal
         visible={folderModalVisible}
         transparent
