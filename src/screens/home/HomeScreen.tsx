@@ -84,12 +84,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         />
 
         <RegisterPromoCard
-          onPress={() =>
-            rootNavigation.navigate("ItemRegisterModel", {
-              folderId: null,
-              folderName: "전체 자산",
-            })
-          }
+          onPress={() => {
+            setTimeout(() => {
+              rootNavigation.navigate("ItemRegisterModel", {
+                folderId: null,
+                folderName: "전체 자산",
+              });
+            }, 300);
+          }}
         />
 
         <WarrantyAlertCard

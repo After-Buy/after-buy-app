@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { colors } from "../../../constants/colors";
@@ -31,10 +31,17 @@ export default function RecentItemCard({ item, onPress }: Props) {
       </View>
 
       <Pressable
-        style={homeStyles.arrowButton}
+        style={({ pressed }) => [
+          homeStyles.detailButton,
+          pressed && homeStyles.detailButtonPressed,
+        ]}
         onPress={() => onPress(item.id)}
       >
-        <Text>→</Text>
+        <MaterialCommunityIcons
+          name="chevron-right"
+          size={18}
+          color={colors.primaryDark}
+        />
       </Pressable>
     </View>
   );

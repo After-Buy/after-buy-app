@@ -16,14 +16,24 @@ export const homeStyles = StyleSheet.create({
 
   scrollContent: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: 100,
+    paddingBottom: spacing.xxl,
     gap: spacing.lg,
   },
 
   sectionCard: {
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.white,
     borderRadius: radius.xl,
     padding: spacing.lg,
+
+    borderWidth: 1,
+    borderColor: colors.divider,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+
+    elevation: 2, // android
   },
 
   headerTitle: {
@@ -56,33 +66,42 @@ export const homeStyles = StyleSheet.create({
 
   summaryRow: {
     flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-    paddingBottom: spacing.md,
-    marginBottom: spacing.lg,
+    justifyContent: "space-between",
+    alignItems: "stretch",
+    marginBottom: spacing.xl,
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.cardBackground,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
 
   summaryItem: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
   },
 
-  summaryDivider: {
-    width: 1,
-    backgroundColor: colors.divider,
-  },
-
-  summaryValue: {
-    fontSize: typography.body,
-    fontWeight: "600",
+  summaryNumber: {
+    fontSize: 15,
+    fontWeight: "500",
     color: colors.textPrimary,
+    marginBottom: 4,
+  },
+
+  summaryLabel: {
+    fontSize: typography.caption,
+    fontWeight: "500",
+    color: colors.textSecondary,
   },
 
   recentItemRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
   },
 
   recentThumbnail: {
@@ -108,25 +127,32 @@ export const homeStyles = StyleSheet.create({
   },
 
   recentItemTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
-    color: colors.icon,
+    color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
 
   recentItemCode: {
-    fontSize: typography.body,
-    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: "500",
+    color: colors.textMuted,
   },
 
-  arrowButton: {
+  detailButton: {
     width: 36,
     height: 36,
-    borderRadius: radius.pill,
+    borderRadius: 18,
+    backgroundColor: colors.softBlue,
     borderWidth: 1,
-    borderColor: colors.icon,
+    borderColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
+    marginLeft: spacing.sm,
+  },
+
+  detailButtonPressed: {
+    opacity: 0.55,
   },
 
   viewAllButton: {
@@ -134,32 +160,76 @@ export const homeStyles = StyleSheet.create({
     marginTop: spacing.sm,
   },
 
+  viewAllRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 0,
+  },
+
   viewAllText: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "600",
     color: colors.textSecondary,
   },
 
   promoCard: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryDark,
     borderRadius: radius.xl,
-    paddingVertical: spacing.xxl,
+    paddingVertical: spacing.xl,
     paddingHorizontal: spacing.xl,
     flexDirection: "row",
     alignItems: "center",
+
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.12,
+    shadowRadius: radius.xl,
+    shadowOffset: { width: 0, height: 6 },
+
+    elevation: 3,
   },
 
-  promoText: {
+  promoIconWrap: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: spacing.md,
+  },
+
+  promoTextWrap: {
     flex: 1,
-    fontSize: 20,
+    justifyContent: "center",
+  },
+
+  promoLabel: {
+    fontSize: typography.caption,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.8)",
+    marginBottom: 4,
+  },
+
+  promoTitle: {
+    fontSize: 17,
     fontWeight: "700",
     color: colors.white,
-    marginLeft: spacing.lg,
+    lineHeight: 23,
+  },
+
+  promoArrow: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.accentYellow,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: spacing.md,
   },
 
   warrantyTop: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     marginBottom: spacing.lg,
   },
 
@@ -169,42 +239,39 @@ export const homeStyles = StyleSheet.create({
   },
 
   warrantyTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
-  },
-
-  warrantyDescription: {
-    fontSize: typography.body,
+    fontSize: 13,
+    fontWeight: "600",
     color: colors.textSecondary,
+    marginBottom: 4,
   },
 
-  actionRow: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    borderTopColor: colors.divider,
-    marginTop: spacing.lg,
-  },
-
-  actionButton: {
-    flex: 1,
-    paddingVertical: spacing.lg,
-    alignItems: "center",
-    justifyContent: "center",
+  warrantyButtonRow: {
     flexDirection: "row",
     gap: spacing.sm,
+    marginTop: spacing.md,
   },
 
-  actionDivider: {
-    width: 1,
-    backgroundColor: colors.divider,
+  warrantyActionButton: {
+    flex: 1,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#FFF7E0",
+    borderWidth: 1,
+    borderColor: "#FFE4A3",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
   },
 
-  actionText: {
-    fontSize: typography.body,
-    color: colors.icon,
-    fontWeight: "500",
+  warrantyActionButtonPressed: {
+    opacity: 0.8,
+  },
+
+  warrantyActionText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#B7791F",
   },
 
   errorWrap: {
@@ -233,5 +300,33 @@ export const homeStyles = StyleSheet.create({
     color: colors.white,
     fontWeight: "700",
     fontSize: typography.body,
+  },
+
+  warrantyBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.softBlue,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: spacing.md,
+  },
+
+  warrantyBadgeEmoji: {
+    fontSize: 24,
+  },
+
+  warrantyLabel: {
+    fontSize: typography.small,
+    fontWeight: "600",
+    color: colors.primaryDark,
+    marginBottom: 4,
+  },
+
+  warrantyHeadline: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: colors.textPrimary,
+    marginBottom: 4,
   },
 });

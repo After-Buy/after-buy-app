@@ -1,7 +1,11 @@
 export const colors = {
-  primary: "#4D86E8",
   background: "#EEF2F6",
   white: "#FFFFFF",
+
+  primary: "#42A5F5", // 아이콘 블루 느낌
+  primaryDark: "#2F80ED", // 더 진한 블루
+  accentYellow: "#F4C542", // 아이콘 화살표 느낌
+  softBlue: "#DFF1FF", // 연한 서브 배경
 
   textPrimary: "#111111",
   textSecondary: "#7B8494",
