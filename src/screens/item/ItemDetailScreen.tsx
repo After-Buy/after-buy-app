@@ -3,7 +3,13 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
-import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -21,7 +27,9 @@ import {
 import AppHeader from "../../components/common/AppHeader";
 import { colors } from "../../constants/colors";
 import { deviceService } from "../../services/database/deviceService";
+import { notificationService } from "../../services/database/notificationService";
 import { itemDetailStyle as styles } from "../../styles/item/itemStyle";
+import { modalStyles } from "../../styles/modalStyle";
 import { RootStackParamList } from "../../types/navigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ItemDetail">;
@@ -83,6 +91,16 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
   const [activeWarrantyUnit, setActiveWarrantyUnit] = useState<
     "year" | "month"
   >("year");
+
+  const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (modalVisible) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+  }, [modalVisible]);
 
   useEffect(() => {
     const init = async () => {
@@ -163,62 +181,84 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
       keyof DeviceDraft,
       {
         label: string;
+        description?: string;
         placeholder?: string;
         multiline?: boolean;
         keyboardType?: "default" | "numeric";
         required?: boolean;
         editable?: boolean;
+        maxLength?: number;
       }
     >
   > = {
     product_name: {
       label: "상품명",
+      description: "서비스에서 표시될 제품 이름입니다.",
       placeholder: "상품명을 입력하세요",
       required: true,
+      maxLength: 200,
     },
     model_name: {
       label: "모델명",
+      description: "OCR 또는 직접 입력된 모델명입니다.",
       required: true,
       editable: false,
+      maxLength: 100,
     },
     brand: {
       label: "브랜드",
+      description: "브랜드명을 입력해주세요.",
       placeholder: "브랜드를 입력하세요",
       required: true,
+      maxLength: 100,
     },
     purchase_date: {
       label: "구매일",
+      description: "제품을 실제로 구매한 날짜를 선택해주세요.",
       placeholder: "YYYY-MM-DD",
       required: true,
+      maxLength: 10,
     },
     purchase_price: {
       label: "구매가",
+      description: "구매 가격을 숫자로 입력해주세요.",
       placeholder: "예: 500000",
       keyboardType: "numeric",
       required: true,
+      maxLength: 12,
     },
     warranty_months: {
       label: "무상 보증 기간(개월)",
+      description: "무상 보증 기간을 개월 수로 저장합니다.",
       placeholder: "예: 12",
       keyboardType: "numeric",
       required: true,
+      maxLength: 3,
     },
     purchase_store: {
       label: "구매처",
+      description: "온라인몰, 오프라인 매장명 등을 입력할 수 있어요.",
       placeholder: "구매처를 입력하세요",
+      maxLength: 100,
     },
     product_link_url: {
       label: "제품 정보 링크",
+      description: "제품 정보 링크를 기록해보세요.",
       placeholder: "링크를 입력하세요",
+      maxLength: 500,
     },
     serial_number: {
       label: "S/N",
+      description: "제품 시리얼 번호를 입력해주세요.",
       placeholder: "시리얼 번호를 입력하세요",
+      maxLength: 100,
     },
     memo: {
       label: "메모",
+      description: "제품과 관련된 메모를 자유롭게 남길 수 있어요.",
       placeholder: "메모를 입력하세요",
       multiline: true,
+      maxLength: 1000,
     },
   };
 
@@ -428,6 +468,8 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
           serial_number: draft.serial_number.trim(),
           memo: draft.memo.trim(),
         });
+
+        await notificationService.syncNotificationsFromDevices();
 
         Alert.alert("완료", "제품이 등록되었습니다.", [
           {
@@ -684,19 +726,14 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
               >
                 <Text
                   style={[
-                    styles.purchaseCardInputText,
+                    styles.purchaseCardDateText,
                     !purchaseDate && styles.placeholderText,
                   ]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
                 >
-                  {purchaseDate || "YYYY / MM /DD"}
+                  {purchaseDate || "구매일 선택"}
                 </Text>
-                <Text> </Text>
-
-                <MaterialCommunityIcons
-                  name="calendar-month-outline"
-                  size={24}
-                  color={colors.textSecondary}
-                />
               </Pressable>
             ) : (
               <Text
@@ -704,8 +741,10 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
                   styles.purchaseCardValue,
                   !purchaseDate && styles.placeholderText,
                 ]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
               >
-                {purchaseDate || "YYYY-MM-DD"}
+                {purchaseDate || "정보 없음"}
               </Text>
             )}
           </View>
@@ -727,6 +766,8 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
                     styles.purchaseCardInputText,
                     !purchasePrice && styles.placeholderText,
                   ]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
                 >
                   {purchasePrice
                     ? `${Number(purchasePrice).toLocaleString()}원`
@@ -1014,23 +1055,41 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
         visible={modalVisible}
         transparent
         animationType="fade"
+        onShow={() => inputRef.current?.focus()}
         onRequestClose={closeFieldModal}
       >
         <KeyboardAvoidingView
-          style={styles.modalOverlay}
+          style={modalStyles.modalOverlay}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          <Pressable style={styles.modalBackdrop} onPress={closeFieldModal} />
+          <Pressable
+            style={modalStyles.modalBackdrop}
+            onPress={closeFieldModal}
+          />
 
-          <View style={styles.modalCard}>
-            <Text style={styles.modalLabel}>
+          <View style={modalStyles.inputModalCard}>
+            <Text style={modalStyles.inputModalTitle}>
               {selectedField ? fieldMeta[selectedField]?.label : ""}
+              {selectedField && fieldMeta[selectedField]?.required && (
+                <Text style={{ color: colors.danger }}> *</Text>
+              )}
+            </Text>
+
+            <Text style={modalStyles.inputModalDescription}>
+              {selectedField
+                ? fieldMeta[selectedField]?.description ||
+                  "정보를 입력해주세요."
+                : ""}
             </Text>
 
             <TextInput
+              ref={inputRef}
               value={modalValue}
               onChangeText={setModalValue}
               autoFocus
+              onFocus={() => console.log("input focused")}
+              showSoftInputOnFocus={true}
+              editable={true}
               placeholder={
                 selectedField ? fieldMeta[selectedField]?.placeholder : ""
               }
@@ -1042,27 +1101,38 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
               multiline={
                 selectedField ? fieldMeta[selectedField]?.multiline : false
               }
+              maxLength={
+                selectedField ? fieldMeta[selectedField]?.maxLength : undefined
+              }
               style={[
-                styles.modalInput,
+                modalStyles.inputModalInput,
                 selectedField &&
                   fieldMeta[selectedField]?.multiline &&
-                  styles.modalMultilineInput,
+                  modalStyles.inputModalMultiline,
               ]}
             />
 
-            <View style={styles.modalButtonRow}>
+            <View style={modalStyles.inputModalMetaRow}>
+              {!!selectedField && fieldMeta[selectedField]?.maxLength && (
+                <Text style={modalStyles.inputModalLength}>
+                  {modalValue.length}/{fieldMeta[selectedField]?.maxLength}
+                </Text>
+              )}
+            </View>
+
+            <View style={modalStyles.inputModalButtonRow}>
               <Pressable
-                style={styles.modalCancelButton}
+                style={modalStyles.inputModalCancelButton}
                 onPress={closeFieldModal}
               >
-                <Text style={styles.modalCancelText}>취소</Text>
+                <Text style={modalStyles.inputModalCancelText}>취소</Text>
               </Pressable>
 
               <Pressable
-                style={styles.modalConfirmButton}
+                style={modalStyles.inputModalConfirmButton}
                 onPress={applyFieldModal}
               >
-                <Text style={styles.modalConfirmText}>적용</Text>
+                <Text style={modalStyles.inputModalConfirmText}>적용</Text>
               </Pressable>
             </View>
           </View>
@@ -1074,25 +1144,58 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
         animationType="fade"
         onRequestClose={() => setImageActionVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={modalStyles.modalOverlay}>
           <Pressable
-            style={styles.modalBackdrop}
+            style={modalStyles.modalBackdrop}
             onPress={() => setImageActionVisible(false)}
           />
 
-          <View style={styles.imageActionContainer}>
+          <View style={modalStyles.profileImageSheet}>
+            <View style={modalStyles.sheetHandle} />
+
+            <Text style={modalStyles.sheetTitle}>프로필 이미지 변경</Text>
+            <Text style={modalStyles.sheetDescription}>
+              갤러리에서 이미지를 선택하거나 직접 촬영할 수 있어요.
+            </Text>
+
             <Pressable
-              style={styles.imageActionButton}
+              style={modalStyles.sheetActionButton}
               onPress={handlePickFromGallery}
             >
-              <Text style={styles.imageActionText}>갤러리에서 선택</Text>
+              <View style={modalStyles.sheetActionIconWrap}>
+                <MaterialCommunityIcons
+                  name="image-outline"
+                  size={22}
+                  color={colors.primaryDark}
+                />
+              </View>
+              <View style={modalStyles.sheetActionTextWrap}>
+                <Text style={modalStyles.sheetActionTitle}>
+                  갤러리에서 선택
+                </Text>
+                <Text style={modalStyles.sheetActionSubtitle}>
+                  앨범에 저장된 사진을 불러옵니다
+                </Text>
+              </View>
             </Pressable>
 
             <Pressable
-              style={styles.imageActionButton}
+              style={modalStyles.sheetActionButton}
               onPress={handleTakePhoto}
             >
-              <Text style={styles.imageActionText}>직접 촬영</Text>
+              <View style={modalStyles.sheetActionIconWrap}>
+                <MaterialCommunityIcons
+                  name="camera-outline"
+                  size={22}
+                  color={colors.primaryDark}
+                />
+              </View>
+              <View style={modalStyles.sheetActionTextWrap}>
+                <Text style={modalStyles.sheetActionTitle}>직접 촬영</Text>
+                <Text style={modalStyles.sheetActionSubtitle}>
+                  카메라로 새 프로필 사진을 촬영합니다
+                </Text>
+              </View>
             </Pressable>
           </View>
         </View>
@@ -1109,38 +1212,39 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
             onPress={() => setWarrantyModalVisible(false)}
           />
 
-          <View style={styles.modalCard}>
-            <Text style={styles.modalLabel}>무상 보증 기간</Text>
+          <View style={modalStyles.pickerModalCard}>
+            <Text style={modalStyles.pickerModalTitle}>무상 보증 기간</Text>
+            <Text style={modalStyles.pickerModalDescription}>
+              년 / 개월 단위로 입력해주세요.
+            </Text>
 
             <View style={styles.warrantyPickerRow}>
               <Pressable
                 style={[
-                  styles.warrantyValueBox,
+                  styles.warrantyValueCard,
                   activeWarrantyUnit === "year" &&
-                    styles.warrantyValueBoxActive,
+                    styles.warrantyValueCardActive,
                 ]}
                 onPress={() => setActiveWarrantyUnit("year")}
               >
-                <Text style={styles.warrantyValueText}>
+                <Text style={styles.warrantyValueNumber}>
                   {pad2(warrantyYears)}
                 </Text>
-                <Text style={styles.warrantyUnitText}>년</Text>
+                <Text style={styles.warrantyValueLabel}>년</Text>
               </Pressable>
-
-              <Text style={styles.warrantyPlusText}>+</Text>
 
               <Pressable
                 style={[
-                  styles.warrantyValueBox,
+                  styles.warrantyValueCard,
                   activeWarrantyUnit === "month" &&
-                    styles.warrantyValueBoxActive,
+                    styles.warrantyValueCardActive,
                 ]}
                 onPress={() => setActiveWarrantyUnit("month")}
               >
-                <Text style={styles.warrantyValueText}>
+                <Text style={styles.warrantyValueNumber}>
                   {pad2(warrantyExtraMonths)}
                 </Text>
-                <Text style={styles.warrantyUnitText}>개월</Text>
+                <Text style={styles.warrantyValueLabel}>개월</Text>
               </Pressable>
             </View>
 
@@ -1155,12 +1259,7 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
                 </Pressable>
               ))}
 
-              <Pressable
-                style={styles.warrantyKey}
-                onPress={removeWarrantyDigit}
-              >
-                <Text style={styles.warrantyKeyText}>←</Text>
-              </Pressable>
+              <View style={styles.warrantyKeyPlaceholder} />
 
               <Pressable
                 style={styles.warrantyKey}
@@ -1171,25 +1270,29 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
 
               <Pressable
                 style={styles.warrantyKey}
-                onPress={applyWarrantyModal}
+                onPress={removeWarrantyDigit}
               >
-                <Text style={styles.warrantyKeyText}>확인</Text>
+                <MaterialCommunityIcons
+                  name="backspace-outline"
+                  size={22}
+                  color={colors.textPrimary}
+                />
               </Pressable>
             </View>
 
-            <View style={styles.modalButtonRow}>
+            <View style={modalStyles.inputModalButtonRow}>
               <Pressable
-                style={styles.modalCancelButton}
+                style={modalStyles.inputModalCancelButton}
                 onPress={clearWarrantyModal}
               >
-                <Text style={styles.modalCancelText}>제거</Text>
+                <Text style={modalStyles.inputModalCancelText}>제거</Text>
               </Pressable>
 
               <Pressable
-                style={styles.modalConfirmButton}
+                style={modalStyles.inputModalConfirmButton}
                 onPress={applyWarrantyModal}
               >
-                <Text style={styles.modalConfirmText}>적용</Text>
+                <Text style={modalStyles.inputModalConfirmText}>적용</Text>
               </Pressable>
             </View>
           </View>
