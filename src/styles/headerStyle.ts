@@ -15,26 +15,35 @@ export const headerStyles = StyleSheet.create({
   leftSection: {
     flex: 1,
     alignItems: "flex-start",
+    justifyContent: "center",
   },
 
   titleSection: {
     flex: 4,
     alignItems: "center",
+    justifyContent: "center",
   },
 
   rightSection: {
     flex: 1,
     alignItems: "flex-end",
+    justifyContent: "center",
   },
 
   headerTitle: {
-    fontSize: typography.subtitle,
+    fontSize: 20,
+    lineHeight: 24,
     color: colors.textPrimary,
-    fontWeight: "700",
+    fontWeight: "800",
+    letterSpacing: -0.3,
   },
 
   iconButton: {
-    padding: spacing.sm,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   textButtonEditing: {

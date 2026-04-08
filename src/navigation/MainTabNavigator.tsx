@@ -1,11 +1,13 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import React, { ComponentProps } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import React, { ComponentProps, useCallback, useEffect, useState } from "react";
 import HomeScreen from "../screens/home/HomeScreen";
-import MenuScreen from "../screens/menu/MenuScreen";
 import NotificationScreen from "../screens/notification/NotificationScreen";
+import { notificationService } from "../services/database/notificationService";
 import { MainTabParamList } from "../types/navigation";
 import ItemNavigator from "./ItemStackNavigator";
+import MenuStackNavigator from "./MenuStackNavigator";
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -21,6 +23,23 @@ const TabIcon = ({ name, size, color }: TabIconProps) => {
 };
 
 export default function MainTabNavigator() {
+  const [hasUnread, setHasUnread] = useState(false);
+
+  const refreshUnread = useCallback(async () => {
+    const unread = await notificationService.isThereAnyUnread();
+    setHasUnread(unread);
+  }, []);
+
+  useEffect(() => {
+    refreshUnread();
+  }, [refreshUnread]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshUnread();
+    }, [refreshUnread]),
+  );
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -30,9 +49,13 @@ export default function MainTabNavigator() {
             name = props.focused ? "home" : "home-outline";
           else if (route.name === "아이템")
             name = props.focused ? "archive" : "archive-outline";
-          else if (route.name === "알림")
-            name = props.focused ? "bell" : "bell-outline";
-          else name = "menu";
+          else if (route.name === "알림") {
+            if (hasUnread) {
+              name = props.focused ? "bell-badge" : "bell-badge-outline";
+            } else {
+              name = props.focused ? "bell" : "bell-outline";
+            }
+          } else name = "menu";
           return TabIcon({ ...props, name });
         },
         headerShown: false,
@@ -41,8 +64,10 @@ export default function MainTabNavigator() {
     >
       <Tab.Screen name="홈" component={HomeScreen} />
       <Tab.Screen name="아이템" component={ItemNavigator} />
-      <Tab.Screen name="알림" component={NotificationScreen} />
-      <Tab.Screen name="메뉴" component={MenuScreen} />
+      <Tab.Screen name="알림">
+        {() => <NotificationScreen onUnreadChanged={refreshUnread} />}
+      </Tab.Screen>
+      <Tab.Screen name="메뉴" component={MenuStackNavigator} />
     </Tab.Navigator>
   );
 }

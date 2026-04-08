@@ -943,66 +943,77 @@ export const itemDetailStyle = StyleSheet.create({
 
   warrantyPickerRow: {
     flexDirection: "row",
+    gap: 12,
+    marginBottom: 20,
+  },
+
+  warrantyValueCard: {
+    flex: 1,
+    minHeight: 96,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#D7E2EE",
+    backgroundColor: "#F8FBFF",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: spacing.xl,
-    gap: spacing.lg,
   },
 
-  warrantyValueBox: {
-    minWidth: 110,
-    paddingVertical: spacing.lg,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.divider,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.sm,
+  warrantyValueCardActive: {
+    borderColor: colors.primaryDark,
+    backgroundColor: "#EEF6FF",
   },
 
-  warrantyValueBoxActive: {
-    borderBottomColor: colors.primary,
-  },
-
-  warrantyValueText: {
-    fontSize: typography.title,
-    fontWeight: "700",
+  warrantyValueNumber: {
+    fontSize: 30,
+    fontWeight: "800",
     color: colors.textPrimary,
+    lineHeight: 36,
   },
 
-  warrantyUnitText: {
-    fontSize: typography.subtitle,
+  warrantyValueLabel: {
+    marginTop: 6,
+    fontSize: 13,
     fontWeight: "600",
-    color: colors.textPrimary,
-  },
-
-  warrantyPlusText: {
-    fontSize: typography.subtitle,
-    fontWeight: "700",
-    color: colors.textPrimary,
+    color: colors.textSecondary,
   },
 
   warrantyKeypad: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    gap: spacing.md,
-    marginBottom: spacing.xl,
+    rowGap: 12,
+    marginBottom: 20,
   },
 
   warrantyKey: {
     width: "30%",
-    aspectRatio: 1.5,
-    borderRadius: radius.md,
-    backgroundColor: colors.white,
+    height: 72,
+    borderRadius: 22,
+    backgroundColor: "#F7FBFF",
+    borderWidth: 1,
+    borderColor: "#D6E9FB",
     alignItems: "center",
     justifyContent: "center",
+
+    shadowColor: colors.primaryDark,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+
+  warrantyKeyPlaceholder: {
+    width: "30%",
   },
 
   warrantyKeyText: {
-    fontSize: typography.subtitle,
-    color: colors.textPrimary,
-    fontWeight: "600",
+    fontSize: 26,
+    lineHeight: 26,
+    fontWeight: "800",
+    color: colors.primaryDark,
+    textAlign: "center",
+    includeFontPadding: false,
+    textAlignVertical: "center",
   },
 
   productSummarySection: {
@@ -1046,6 +1057,7 @@ export const itemDetailStyle = StyleSheet.create({
   purchaseCardTopCell: {
     flex: 1,
     justifyContent: "space-between",
+    minWidth: 0,
   },
 
   purchaseCardDivider: {
@@ -1073,32 +1085,56 @@ export const itemDetailStyle = StyleSheet.create({
   },
 
   purchaseCardInputBox: {
-    minHeight: 52,
+    minHeight: 44,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.textSecondary,
-    borderRadius: radius.md,
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing.lg,
-    justifyContent: "center",
-  },
-
-  purchaseCardDateInput: {
-    minHeight: 52,
-    borderWidth: 1,
-    borderColor: colors.textPrimary,
-    borderRadius: radius.md,
-    backgroundColor: colors.white,
-    paddingHorizontal: 10,
+    borderColor: "#D7E2EE",
+    backgroundColor: "#FAFCFF",
+    paddingLeft: 14,
+    paddingRight: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    overflow: "hidden",
   },
 
   purchaseCardInputText: {
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: "600",
+    flex: 1,
+    fontSize: typography.body,
     color: colors.textPrimary,
+    fontWeight: "600",
+    flexShrink: 1,
+  },
+
+  purchaseCardDateInput: {
+    minHeight: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#D7E2EE",
+    backgroundColor: "#FAFCFF",
+    paddingLeft: 14,
+    paddingRight: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    overflow: "hidden",
+  },
+
+  purchaseCardDateText: {
+    flex: 1,
+    fontSize: typography.body,
+    color: colors.textPrimary,
+    fontWeight: "600",
+    marginRight: 8,
+  },
+
+  purchaseCardDateIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
 
   nearCenterCard: {

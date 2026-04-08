@@ -1,6 +1,7 @@
 import { NavigationContainer } from "@react-navigation/native";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import RootNavigator from "./navigation/RootNavigator";
 import { initDatabase } from "./services/database/sqlite";
 
@@ -27,8 +28,10 @@ export default function App() {
     );
   }
   return (
-    <NavigationContainer>
-      <RootNavigator />
-    </NavigationContainer>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <NavigationContainer>
+        <RootNavigator />
+      </NavigationContainer>
+    </GestureHandlerRootView>
   );
 }

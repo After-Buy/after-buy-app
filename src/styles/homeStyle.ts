@@ -21,7 +21,7 @@ export const homeStyles = StyleSheet.create({
   },
 
   sectionCard: {
-    backgroundColor: colors.white,
+    backgroundColor: "#F0F7FF",
     borderRadius: radius.xl,
     padding: spacing.lg,
 
