@@ -5,6 +5,21 @@ export const ocrStyles = StyleSheet.create({
 
   loadingContainer: { flex: 1, backgroundColor: "black" },
 
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 999,
+  },
+
+  loadingText: {
+    marginTop: 14,
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
   permissionContainer: {
     flex: 1,
     backgroundColor: "#111827",
@@ -55,13 +70,20 @@ export const ocrStyles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "rgba(255,255,255,0.9)",
+    backgroundColor: "rgba(255,255,255,0.92)",
     alignItems: "center",
     justifyContent: "center",
   },
-  bottomIconText: {
-    fontSize: 24,
+
+  bottomIconButtonActive: {
+    backgroundColor: "#2563EB",
   },
+
+  bottomIconPlaceholder: {
+    width: 56,
+    height: 56,
+  },
+
   captureButtonOuter: {
     width: 88,
     height: 88,

@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
+import KakaoLoginWebView from "../screens/auth/KakaoLoginWebview";
 import LoginScreen from "../screens/auth/LoginScreen";
 import { AuthStackParamList } from "../types/navigation";
 
@@ -14,6 +15,9 @@ export default function AuthNavigator({ onLogin }: AuthNavigatorProps) {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login">
         {(props) => <LoginScreen {...props} onLogin={onLogin} />}
+      </Stack.Screen>
+      <Stack.Screen name="KakaoLogin">
+        {() => <KakaoLoginWebView onLogin={onLogin} />}
       </Stack.Screen>
     </Stack.Navigator>
   );

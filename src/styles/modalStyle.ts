@@ -5,6 +5,21 @@ import { spacing } from "../constants/spacing";
 import { typography } from "../constants/typography";
 
 export const modalStyles = StyleSheet.create({
+  modalRoot: {
+    flex: 1,
+  },
+
+  keyboardSheetContainer: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+
+  keyboardCenterContainer: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+
   modalOverlay: {
     flex: 1,
     justifyContent: "flex-end",
@@ -187,7 +202,6 @@ export const modalStyles = StyleSheet.create({
 
   inputModalCard: {
     marginHorizontal: spacing.lg,
-    marginBottom: spacing.xxxxl,
     backgroundColor: colors.white,
     borderRadius: 24,
     paddingHorizontal: spacing.lg,
@@ -311,5 +325,70 @@ export const modalStyles = StyleSheet.create({
     lineHeight: 20,
     textAlign: "center",
     marginBottom: spacing.xl,
+  },
+
+  confirmOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.3)",
+  },
+
+  confirmBox: {
+    width: "80%",
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 20,
+  },
+
+  confirmText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.textPrimary,
+    textAlign: "center",
+    lineHeight: 23,
+    marginTop: 15,
+    marginBottom: 15,
+  },
+
+  confirmButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 20,
+  },
+
+  confirmButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+
+  confirmCancelButton: {
+    backgroundColor: "#F3F4F6",
+    marginRight: 8,
+  },
+
+  confirmConfirmButton: {
+    backgroundColor: colors.primaryDark,
+    marginLeft: 8,
+  },
+
+  confirmCancelText: {
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+
+  confirmConfirmText: {
+    color: "white",
+    fontWeight: "700",
+  },
+
+  confirmTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: colors.textPrimary,
+    textAlign: "center",
+    marginBottom: 8,
   },
 });

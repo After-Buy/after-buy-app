@@ -14,7 +14,7 @@ interface Props extends LoginScreenProps {
   onLogin: () => void;
 }
 
-export default function LoginScreen({ onLogin }: Props) {
+export default function LoginScreen({ onLogin, navigation }: Props) {
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const logoTranslateY = useRef(new Animated.Value(20)).current;
 
@@ -140,7 +140,10 @@ export default function LoginScreen({ onLogin }: Props) {
           },
         ]}
       >
-        <TouchableOpacity activeOpacity={0.85} onPress={onLogin}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate("KakaoLogin")}
+        >
           <Image
             source={require("../../assets/kakao_login_large_wide.png")}
             style={styles.kakaoImageButton}

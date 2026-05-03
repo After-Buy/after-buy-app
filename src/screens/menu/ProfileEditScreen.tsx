@@ -3,13 +3,12 @@ import { modalStyles } from "@/src/styles/modalStyle";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import * as ImagePicker from "expo-image-picker";
 import { useNavigation } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Image,
-  KeyboardAvoidingView,
+  Keyboard,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -17,11 +16,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AppHeader from "../../components/common/AppHeader";
 import { colors } from "../../constants/colors";
 import { profileEditStyles } from "../../styles/menu/menuStyle";
 
 export default function ProfileEditScreen() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const [nickname, setNickname] = useState("");
   const [tempNickname, setTempNickname] = useState("");
@@ -33,9 +34,26 @@ export default function ProfileEditScreen() {
   const [nicknameError, setNicknameError] = useState("");
 
   const [isSubmittingNickname, setIsSubmittingNickname] = useState(false);
-  const [isSubmittingImage, setIsSubmittingImage] = useState(false);
+
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const nicknameInputRef = useRef<TextInput>(null);
 
   const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -260,7 +278,9 @@ export default function ProfileEditScreen() {
         animationType="fade"
         onRequestClose={() => setImageActionVisible(false)}
       >
-        <View style={modalStyles.modalOverlay}>
+        <View
+          style={[modalStyles.modalOverlay, { paddingBottom: insets.bottom }]}
+        >
           <Pressable
             style={modalStyles.modalBackdrop}
             onPress={() => setImageActionVisible(false)}
@@ -320,61 +340,88 @@ export default function ProfileEditScreen() {
         visible={nicknameModalVisible}
         transparent
         animationType="fade"
+        onShow={() => {
+          Keyboard.dismiss();
+
+          setTimeout(() => {
+            nicknameInputRef.current?.focus();
+          }, 300);
+
+          setTimeout(() => {
+            nicknameInputRef.current?.focus();
+          }, 600);
+        }}
         onRequestClose={() => setNicknameModalVisible(false)}
       >
-        <KeyboardAvoidingView
-          style={modalStyles.modalOverlay}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
+        <View style={modalStyles.modalRoot}>
           <Pressable
             style={modalStyles.modalBackdrop}
             onPress={() => setNicknameModalVisible(false)}
           />
-
-          <View style={modalStyles.nicknameModalCard}>
-            <Text style={modalStyles.nicknameModalTitle}>닉네임 수정</Text>
-            <Text style={modalStyles.nicknameModalDescription}>
-              서비스에서 표시되는 이름을 변경할 수 있어요.
-            </Text>
-
-            <TextInput
-              value={tempNickname}
-              onChangeText={handleChangeNickname}
-              autoFocus
-              maxLength={50}
-              placeholder="닉네임을 입력하세요"
-              style={modalStyles.nicknameInput}
-            />
-
-            <View style={modalStyles.nicknameMetaRow}>
-              <Text style={modalStyles.nicknameErrorText}>
-                {nicknameError || " "}
+          <View
+            style={[
+              modalStyles.keyboardSheetContainer,
+              {
+                paddingHorizontal: 0,
+              },
+            ]}
+          >
+            <View
+              style={[
+                modalStyles.nicknameModalCard,
+                {
+                  marginBottom:
+                    keyboardHeight > 0
+                      ? keyboardHeight + 55
+                      : insets.bottom + 16,
+                },
+              ]}
+            >
+              <Text style={modalStyles.nicknameModalTitle}>닉네임 수정</Text>
+              <Text style={modalStyles.nicknameModalDescription}>
+                서비스에서 표시되는 이름을 변경할 수 있어요.
               </Text>
-              <Text style={modalStyles.nicknameLengthText}>
-                {tempNickname.length}/50
-              </Text>
-            </View>
 
-            <View style={modalStyles.nicknameModalButtonRow}>
-              <Pressable
-                style={modalStyles.nicknameCancelButton}
-                onPress={() => setNicknameModalVisible(false)}
-              >
-                <Text style={modalStyles.nicknameCancelText}>취소</Text>
-              </Pressable>
+              <TextInput
+                ref={nicknameInputRef}
+                value={tempNickname}
+                onChangeText={handleChangeNickname}
+                showSoftInputOnFocus
+                maxLength={50}
+                placeholder="닉네임을 입력하세요"
+                style={modalStyles.nicknameInput}
+              />
 
-              <Pressable
-                style={modalStyles.nicknameConfirmButton}
-                onPress={handleSaveNickname}
-                disabled={isSubmittingNickname}
-              >
-                <Text style={modalStyles.nicknameConfirmText}>
-                  {isSubmittingNickname ? "저장 중..." : "저장"}
+              <View style={modalStyles.nicknameMetaRow}>
+                <Text style={modalStyles.nicknameErrorText}>
+                  {nicknameError || " "}
                 </Text>
-              </Pressable>
+                <Text style={modalStyles.nicknameLengthText}>
+                  {tempNickname.length}/50
+                </Text>
+              </View>
+
+              <View style={modalStyles.nicknameModalButtonRow}>
+                <Pressable
+                  style={modalStyles.nicknameCancelButton}
+                  onPress={() => setNicknameModalVisible(false)}
+                >
+                  <Text style={modalStyles.nicknameCancelText}>취소</Text>
+                </Pressable>
+
+                <Pressable
+                  style={modalStyles.nicknameConfirmButton}
+                  onPress={handleSaveNickname}
+                  disabled={isSubmittingNickname}
+                >
+                  <Text style={modalStyles.nicknameConfirmText}>
+                    {isSubmittingNickname ? "저장 중..." : "저장"}
+                  </Text>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
     </View>
   );
