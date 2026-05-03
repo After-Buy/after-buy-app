@@ -1,11 +1,17 @@
 import { spacing } from "@/src/constants/spacing";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import React, { Fragment, useEffect, useLayoutEffect, useState } from "react";
+import React, {
+  Fragment,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
-  Alert,
   FlatList,
   Image,
+  Keyboard,
   Modal,
   Pressable,
   Text,
@@ -14,7 +20,9 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Toast from "../../components/common/Toast";
 
+import { modalStyles } from "@/src/styles/modalStyle";
 import AppHeader from "../../components/common/AppHeader";
 import { colors } from "../../constants/colors";
 import { deviceService } from "../../services/database/deviceService";
@@ -26,6 +34,9 @@ export default function ItemListScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const folderInputRef = useRef<TextInput>(null);
+  const renameInputRef = useRef<TextInput>(null);
   const {
     folderId = null,
     folderName = "전체 자산",
@@ -75,6 +86,56 @@ export default function ItemListScreen() {
 
   const [activeItem, setActiveItem] = useState<Folder | Device | null>(null);
 
+  const [searchFolders, setSearchFolders] = useState<Folder[]>([]);
+  const [searchDevices, setSearchDevices] = useState<Device[]>([]);
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
+
+  const [toast, setToast] = useState({ visible: false, message: "" });
+
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
+  const [confirmMessage, setConfirmMessage] = useState("");
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const showToast = (msg: string) => {
+    setToast({ visible: true, message: msg });
+
+    setTimeout(() => {
+      setToast({ visible: false, message: "" });
+    }, 2000);
+  };
+
+  const openConfirm = (message: string, action: () => void) => {
+    setConfirmMessage(message);
+    setConfirmAction(() => action);
+    setConfirmVisible(true);
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      await loadData();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   useLayoutEffect(() => {
     const parent = navigation.getParent();
 
@@ -91,12 +152,40 @@ export default function ItemListScreen() {
   }, [navigation, searchMode, selectionMode]);
 
   const loadData = async () => {
-    const { folders, devices, breadcrumbs } =
-      await folderService.getFolderContents(1, folderId);
+    try {
+      console.log("[ItemList] loadData start:", { folderId, folderName });
 
-    setFolders(folders);
-    setDevices(devices);
-    setBreadcrumbs(breadcrumbs);
+      if (folderId === null) {
+        const [foldersResult, rawDevices] = await Promise.all([
+          folderService.getFolderContents(1, null),
+          deviceService.getUnclassifiedDevices(),
+        ]);
+
+        const devices = rawDevices.map((item: any) => ({
+          ...item,
+          model_name: item.model_name ?? "",
+          brand: item.brand ?? "",
+          image_url: item.image_url ?? "",
+        }));
+
+        setFolders(foldersResult.folders);
+        setDevices(devices);
+        setBreadcrumbs([]);
+
+        return;
+      }
+
+      const result = await folderService.getFolderContents(1, folderId);
+
+      console.log("[ItemList] loadData result:", result);
+
+      setFolders(result.folders);
+      setDevices(result.devices);
+      setBreadcrumbs(result.breadcrumbs);
+    } catch (error: any) {
+      console.log("[ItemList] loadData error:", error);
+      showToast("폴더 불러오기 실패");
+    }
   };
 
   useEffect(() => {
@@ -116,22 +205,43 @@ export default function ItemListScreen() {
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
 
-  const filteredFolders = searchMode
-    ? folders.filter((folder) =>
-        folder.folder_name.toLowerCase().includes(normalizedQuery),
-      )
-    : folders;
-
-  const filteredDevices = searchMode
-    ? devices.filter((device) =>
-        device.product_name.toLowerCase().includes(normalizedQuery),
-      )
-    : devices;
-
   const displayData =
     searchMode && normalizedQuery.length > 0
-      ? [...filteredFolders, ...filteredDevices]
+      ? [...searchFolders, ...searchDevices]
       : [...folders, ...devices];
+
+  useEffect(() => {
+    if (!searchMode || normalizedQuery.length === 0) {
+      setSearchFolders([]);
+      setSearchDevices([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsSearchLoading(true);
+
+        const data = await deviceService.searchItems(normalizedQuery);
+
+        setSearchFolders(
+          (data.folders ?? []).map((folder: any) => ({
+            ...folder,
+            device_count: folder.child_count ?? folder.device_count ?? 0,
+          })),
+        );
+
+        setSearchDevices(data.devices ?? []);
+      } catch (error) {
+        console.log("Search error:", error);
+        setSearchFolders([]);
+        setSearchDevices([]);
+      } finally {
+        setIsSearchLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchMode, normalizedQuery]);
 
   const breadcrumbItems: BreadcrumbItem[] = [
     { folder_id: null, folder_name: "root" },
@@ -140,8 +250,6 @@ export default function ItemListScreen() {
 
   const isSearching = searchMode && normalizedQuery.length > 0;
   const hasNoSearchResult = isSearching && displayData.length === 0;
-  const hasNoDefaultData =
-    !searchMode && folders.length === 0 && devices.length === 0;
 
   const escapeRegExp = (value: string) =>
     value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -203,6 +311,10 @@ export default function ItemListScreen() {
     nextFolderId: number | null,
     nextFolderName: string,
   ) => {
+    console.log("[ItemList] moveToFolder:", {
+      nextFolderId,
+      nextFolderName,
+    });
     if (selectionMode) {
       navigation.replace("ItemList", {
         folderId: nextFolderId,
@@ -224,7 +336,7 @@ export default function ItemListScreen() {
     const trimmedName = newFolderName.trim();
 
     if (!trimmedName) {
-      Alert.alert("안내", "폴더명을 입력해주세요.");
+      openConfirm("폴더명을 입력해주세요", () => {});
       return;
     }
 
@@ -243,7 +355,7 @@ export default function ItemListScreen() {
 
       await loadData();
     } catch (error) {
-      Alert.alert("오류", "폴더를 생성하지 못했습니다.");
+      showToast("폴더 생성 실패");
     } finally {
       setIsCreatingFolder(false);
     }
@@ -268,40 +380,31 @@ export default function ItemListScreen() {
 
   const handleDeleteSelected = () => {
     if (selectedCount === 0) {
-      Alert.alert("안내", "삭제할 항목을 선택해주세요.");
+      showToast("삭제할 항목을 선택해주세요");
       return;
     }
 
-    Alert.alert("삭제 확인", "선택한 항목을 삭제하시겠습니까?", [
-      { text: "취소", style: "cancel" },
-      {
-        text: "삭제",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            for (const folderId of selectedFolders) {
-              await folderService.deleteFolder(folderId);
-            }
+    openConfirm("선택한 항목을 삭제하시겠습니까?", async () => {
+      try {
+        await folderService.bulkDeleteItems({
+          folderIds: selectedFolders,
+          deviceIds: selectedDevices,
+        });
 
-            for (const deviceId of selectedDevices) {
-              await deviceService.deleteDevice(deviceId);
-            }
+        await loadData();
+        exitSelectionMode();
 
-            await loadData();
-            exitSelectionMode();
-
-            Alert.alert("완료", "삭제되었습니다.");
-          } catch (error) {
-            Alert.alert("오류", "삭제 중 문제가 발생했습니다.");
-          }
-        },
-      },
-    ]);
+        showToast("삭제 완료");
+      } catch (error) {
+        console.log("[DELETE ERROR]", error);
+        showToast("삭제 실패");
+      }
+    });
   };
 
   const handleOpenMoveModal = async () => {
     if (selectedCount === 0) {
-      Alert.alert("안내", "이동할 항목을 선택해주세요.");
+      showToast("이동할 항목을 선택해주세요");
       return;
     }
 
@@ -309,7 +412,7 @@ export default function ItemListScreen() {
       await loadMoveModalData(folderId, folderName);
       setMoveModalVisible(true);
     } catch (error) {
-      Alert.alert("오류", "이동 위치를 불러오지 못했습니다.");
+      showToast("이동 위치를 불러오지 못했습니다.");
     }
   };
 
@@ -328,7 +431,7 @@ export default function ItemListScreen() {
 
   const handleConfirmMove = async () => {
     if (selectedCount === 0) {
-      Alert.alert("안내", "이동할 항목을 선택해주세요.");
+      showToast("이동할 항목을 선택해주세요");
       return;
     }
 
@@ -340,10 +443,7 @@ export default function ItemListScreen() {
         );
 
         if (isInvalid) {
-          Alert.alert(
-            "안내",
-            "폴더는 자기 자신 또는 하위 폴더로 이동할 수 없습니다.",
-          );
+          showToast("폴더는 자기 자신 또는 하위 폴더로 이동할 수 없습니다.");
           return;
         }
       }
@@ -364,9 +464,9 @@ export default function ItemListScreen() {
         exitSelectionMode();
       }
 
-      Alert.alert("완료", "항목이 이동되었습니다.");
+      showToast("이동 완료");
     } catch (error) {
-      Alert.alert("오류", "이동 중 문제가 발생했습니다.");
+      showToast("이동 실패");
     }
   };
 
@@ -473,30 +573,23 @@ export default function ItemListScreen() {
     const isFolder = isFolderItem(activeItem);
     const targetLabel = isFolder ? "폴더" : "아이템";
 
-    Alert.alert("삭제 확인", `${targetLabel}을(를) 삭제하시겠습니까?`, [
-      { text: "취소", style: "cancel" },
-      {
-        text: "삭제",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            if (isFolder) {
-              await folderService.deleteFolder(activeItem.folder_id);
-            } else {
-              await deviceService.deleteDevice(activeItem.device_id);
-            }
+    openConfirm(`${targetLabel}을(를) 삭제하시겠습니까?`, async () => {
+      try {
+        if (isFolder) {
+          await folderService.deleteFolder(activeItem.folder_id);
+        } else {
+          await deviceService.deleteDevice(activeItem.device_id);
+        }
 
-            setItemActionModalVisible(false);
-            setActiveItem(null);
-            await loadData();
+        setItemActionModalVisible(false);
+        setActiveItem(null);
+        await loadData();
 
-            Alert.alert("완료", `${targetLabel}이(가) 삭제되었습니다.`);
-          } catch (error) {
-            Alert.alert("오류", `${targetLabel} 삭제 중 문제가 발생했습니다.`);
-          }
-        },
-      },
-    ]);
+        showToast(`${targetLabel} 삭제 완료`);
+      } catch (error) {
+        showToast(`${targetLabel} 삭제 실패`);
+      }
+    });
   };
 
   const handleMoveSingleItem = async () => {
@@ -515,7 +608,7 @@ export default function ItemListScreen() {
       setItemActionModalVisible(false);
       setMoveModalVisible(true);
     } catch (error) {
-      Alert.alert("오류", "이동 위치를 불러오지 못했습니다.");
+      showToast("이동 위치를 불러오지 못했습니다.");
     }
   };
 
@@ -524,23 +617,15 @@ export default function ItemListScreen() {
 
     const trimmedName = renameValue.trim();
     if (!trimmedName) {
-      Alert.alert("안내", "이름을 입력해주세요.");
+      showToast("이름을 입력해주세요.");
       return;
     }
 
     try {
       if (isFolderItem(activeItem)) {
-        // TODO: folderService.updateFolderName(activeItem.folder_id, trimmedName)
-        await folderService.updateFolderName?.(
-          activeItem.folder_id,
-          trimmedName,
-        );
+        await folderService.updateFolderName(activeItem.folder_id, trimmedName);
       } else {
-        // TODO: deviceService.updateDeviceName(activeItem.device_id, trimmedName)
-        await deviceService.updateDeviceName?.(
-          activeItem.device_id,
-          trimmedName,
-        );
+        await deviceService.updateDeviceName(activeItem.device_id, trimmedName);
       }
 
       setRenameModalVisible(false);
@@ -548,9 +633,9 @@ export default function ItemListScreen() {
       setRenameValue("");
       await loadData();
 
-      Alert.alert("완료", "이름이 수정되었습니다.");
+      showToast("수정 완료");
     } catch (error) {
-      Alert.alert("오류", "이름 수정 중 문제가 발생했습니다.");
+      showToast("이름 수정 실패");
     }
   };
 
@@ -827,6 +912,8 @@ export default function ItemListScreen() {
       )}
       <FlatList
         data={displayData}
+        refreshing={isRefreshing}
+        onRefresh={handleRefresh}
         keyExtractor={(item) =>
           "device_id" in item
             ? `device-${item.device_id}`
@@ -908,7 +995,12 @@ export default function ItemListScreen() {
         animationType="fade"
         onRequestClose={() => setMenuVisible(false)}
       >
-        <View style={styles.headerMenuModalOverlay}>
+        <View
+          style={[
+            styles.headerMenuModalOverlay,
+            { paddingBottom: insets.bottom },
+          ]}
+        >
           <Pressable
             style={styles.headerMenuBackdrop}
             onPress={() => setMenuVisible(false)}
@@ -949,6 +1041,17 @@ export default function ItemListScreen() {
         visible={folderModalVisible}
         transparent
         animationType="fade"
+        onShow={() => {
+          Keyboard.dismiss();
+
+          setTimeout(() => {
+            folderInputRef.current?.focus();
+          }, 300);
+
+          setTimeout(() => {
+            folderInputRef.current?.focus();
+          }, 600);
+        }}
         onRequestClose={() => setFolderModalVisible(false)}
       >
         <View
@@ -975,6 +1078,8 @@ export default function ItemListScreen() {
               backgroundColor: "white",
               borderRadius: 16,
               padding: 20,
+              marginBottom:
+                keyboardHeight > 0 ? keyboardHeight : insets.bottom + 16,
             }}
           >
             <Text
@@ -989,10 +1094,11 @@ export default function ItemListScreen() {
             </Text>
 
             <TextInput
+              ref={folderInputRef}
               value={newFolderName}
               onChangeText={setNewFolderName}
               placeholder="폴더명을 입력하세요"
-              autoFocus
+              showSoftInputOnFocus
               style={{
                 borderWidth: 1,
                 borderColor: "#E5E7EB",
@@ -1045,7 +1151,9 @@ export default function ItemListScreen() {
         animationType="fade"
         onRequestClose={() => setItemActionModalVisible(false)}
       >
-        <View style={styles.actionModalOverlay}>
+        <View
+          style={[styles.actionModalOverlay, { paddingBottom: insets.bottom }]}
+        >
           <Pressable
             style={styles.actionModalBackdrop}
             onPress={() => setItemActionModalVisible(false)}
@@ -1090,22 +1198,44 @@ export default function ItemListScreen() {
         visible={renameModalVisible}
         transparent
         animationType="fade"
+        onShow={() => {
+          Keyboard.dismiss();
+
+          setTimeout(() => {
+            renameInputRef.current?.focus();
+          }, 300);
+
+          setTimeout(() => {
+            renameInputRef.current?.focus();
+          }, 600);
+        }}
         onRequestClose={() => setRenameModalVisible(false)}
       >
-        <View style={styles.renameModalOverlay}>
+        <View
+          style={[styles.renameModalOverlay, { paddingBottom: insets.bottom }]}
+        >
           <Pressable
             style={styles.renameModalBackdrop}
             onPress={() => setRenameModalVisible(false)}
           />
 
-          <View style={styles.renameModalCard}>
+          <View
+            style={[
+              styles.renameModalCard,
+              {
+                marginBottom:
+                  keyboardHeight > 0 ? keyboardHeight + 60 : insets.bottom + 16,
+              },
+            ]}
+          >
             <Text style={styles.renameModalTitle}>이름 수정</Text>
 
             <TextInput
+              ref={renameInputRef}
               value={renameValue}
               onChangeText={setRenameValue}
               placeholder="이름을 입력하세요"
-              autoFocus
+              showSoftInputOnFocus
               style={styles.renameModalInput}
             />
 
@@ -1136,7 +1266,9 @@ export default function ItemListScreen() {
         animationType="fade"
         onRequestClose={() => setMoveModalVisible(false)}
       >
-        <View style={styles.moveModalOverlay}>
+        <View
+          style={[styles.moveModalOverlay, { paddingBottom: insets.bottom }]}
+        >
           <Pressable
             style={styles.moveModalBackdrop}
             onPress={() => setMoveModalVisible(false)}
@@ -1226,6 +1358,39 @@ export default function ItemListScreen() {
                 onPress={handleConfirmMove}
               >
                 <Text style={styles.moveModalConfirmText}>여기로 이동</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      <Toast visible={toast.visible} message={toast.message} />
+      <Modal visible={confirmVisible} transparent animationType="fade">
+        <View style={modalStyles.confirmOverlay}>
+          <View style={modalStyles.confirmBox}>
+            <Text style={modalStyles.confirmText}>{confirmMessage}</Text>
+
+            <View style={modalStyles.confirmButtons}>
+              <TouchableOpacity
+                style={[
+                  modalStyles.confirmButton,
+                  modalStyles.confirmCancelButton,
+                ]}
+                onPress={() => setConfirmVisible(false)}
+              >
+                <Text style={modalStyles.confirmCancelText}>취소</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  modalStyles.confirmButton,
+                  modalStyles.confirmConfirmButton,
+                ]}
+                onPress={() => {
+                  confirmAction();
+                  setConfirmVisible(false);
+                }}
+              >
+                <Text style={modalStyles.confirmConfirmText}>확인</Text>
               </TouchableOpacity>
             </View>
           </View>

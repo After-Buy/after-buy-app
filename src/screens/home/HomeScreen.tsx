@@ -28,7 +28,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   const loadHomeData = async () => {
     try {
-      const data = await deviceService.getHomeData(1);
+      const data = await deviceService.getHomeData();
       setHomeData(data);
 
       const isEmpty =

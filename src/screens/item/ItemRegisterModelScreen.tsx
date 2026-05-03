@@ -1,3 +1,6 @@
+import { colors } from "@/src/constants/colors";
+import { modalStyles } from "@/src/styles/modalStyle";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import React, { useEffect, useLayoutEffect, useState } from "react";
 import {
@@ -11,11 +14,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AppHeader from "../../components/common/AppHeader";
-import {
-  itemDetailStyle as Modalstyles,
-  itemRegisterModelStyle as styles,
-} from "../../styles/item/itemStyle";
-import { RootStackParamList } from "../../types/navigation";
+import { deviceService } from "../../services/database/deviceService";
+import { itemRegisterModelStyle as styles } from "../../styles/item/itemStyle";
+import { OCROriginalResult, RootStackParamList } from "../../types/navigation";
 
 import * as ImagePicker from "expo-image-picker";
 
@@ -25,7 +26,12 @@ export default function ItemRegisterModelScreen({ navigation, route }: Props) {
   const { folderId = null, folderName = "전체 자산" } = route.params || {};
   const [modelName, setModelName] = useState("");
   const [imageActionVisible, setImageActionVisible] = useState(false);
+  const [isOcrLoading, setIsOcrLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const insets = useSafeAreaInsets();
+  const [ocrOriginalResult, setOcrOriginalResult] =
+    useState<OCROriginalResult | null>(null);
+  const [ocrLogId, setOcrLogId] = useState<number | null>(null);
 
   useEffect(() => {
     const result = route.params?.ocrResult;
@@ -49,7 +55,7 @@ export default function ItemRegisterModelScreen({ navigation, route }: Props) {
     };
   }, [navigation]);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const trimmed = modelName.trim();
 
     if (!trimmed) {
@@ -57,12 +63,64 @@ export default function ItemRegisterModelScreen({ navigation, route }: Props) {
       return;
     }
 
-    navigation.navigate("ItemDetail", {
-      folderId,
-      folderName,
-      modelName: trimmed,
-      mode: "edit",
-    });
+    try {
+      setIsSearching(true);
+
+      const productInfo = await deviceService.searchProductByModelName(trimmed);
+
+      navigation.navigate("ItemDetail", {
+        folderId,
+        folderName,
+        modelName: trimmed,
+        productInfo,
+        mode: "edit",
+        ocrOriginalResult,
+        ocrLogId,
+      });
+    } catch (error: any) {
+      console.log("===== NAVER SEARCH DEBUG =====");
+
+      console.log(
+        "FULL URL:",
+        `${error?.config?.baseURL}${error?.config?.url}`,
+      );
+
+      console.log("BASE URL:", `[${error?.config?.baseURL}]`);
+      console.log("URL PATH:", `[${error?.config?.url}]`);
+
+      console.log("PARAMS:", error?.config?.params);
+      console.log("HEADERS:", error?.config?.headers);
+
+      console.log("STATUS:", error?.response?.status);
+      console.log("RESPONSE:", error?.response?.data);
+
+      console.log("ERROR MESSAGE:", error?.message);
+      console.log("ERROR CODE:", error?.code);
+      console.log("REQUEST EXISTS:", !!error?.request);
+
+      console.log("QUERY:", trimmed);
+
+      Alert.alert(
+        "안내",
+        "제품 정보를 찾지 못했습니다. 상세 정보 화면에서 직접 입력해주세요.",
+        [
+          {
+            text: "확인",
+            onPress: () =>
+              navigation.navigate("ItemDetail", {
+                folderId,
+                folderName,
+                modelName: trimmed,
+                mode: "edit",
+                ocrOriginalResult,
+                ocrLogId,
+              }),
+          },
+        ],
+      );
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleOpenOCROptions = () => {
@@ -81,6 +139,7 @@ export default function ItemRegisterModelScreen({ navigation, route }: Props) {
   const handlePickFromGallery = async () => {
     try {
       setImageActionVisible(false);
+      setIsOcrLoading(true);
 
       const permissionResult =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -100,28 +159,56 @@ export default function ItemRegisterModelScreen({ navigation, route }: Props) {
       if (result.canceled) return;
 
       const asset = result.assets?.[0];
-      if (!asset) {
-        Alert.alert("오류", "선택한 이미지를 불러오지 못했습니다.");
+
+      if (!asset?.base64) {
+        Alert.alert("오류", "이미지 데이터를 읽지 못했습니다.");
         return;
       }
 
-      // 실제 OCR API 연결 전 임시 mock 처리
-      setModelName("MTQN3KH/A");
+      const response = await deviceService.requestOCR({
+        ocr_type: "MODEL",
+        image_base64: asset.base64,
+      });
 
-      // 추후 실제 OCR 연결 시 예시
-      // if (!asset.base64) {
-      //   Alert.alert("오류", "이미지 데이터를 읽지 못했습니다.");
-      //   return;
-      // }
-      //
-      // const response = await deviceService.requestOCR({
-      //   ocr_type: "MODEL",
-      //   image_base64: asset.base64,
-      // });
-      //
-      // setModelName(response.model_name ?? "");
-    } catch (error) {
-      Alert.alert("오류", "갤러리 이미지 선택 중 문제가 발생했습니다.");
+      if (
+        !response.success ||
+        !response.data.is_success ||
+        !response.data.result
+      ) {
+        Alert.alert(
+          "안내",
+          response.data.message ?? "모델명을 인식하지 못했습니다.",
+        );
+        return;
+      }
+
+      const modelName = response.data.result.model_name;
+
+      setOcrOriginalResult(response.data.result);
+      setOcrLogId(response.data.ocr_log_id ?? null);
+
+      console.log("[OCR] 원본 결과", response.data.result);
+      console.log("[OCR] ocrLogId", response.data.ocr_log_id);
+
+      if (!modelName) {
+        Alert.alert("안내", "모델명을 인식하지 못했습니다.");
+        return;
+      }
+
+      setModelName(modelName);
+    } catch (error: any) {
+      console.log("Gallery OCR error message:", error?.message);
+      console.log("Gallery OCR error response:", error?.response?.data);
+      console.log("Gallery OCR error status:", error?.response?.status);
+      console.log(
+        "Gallery OCR error config url:",
+        error?.config?.baseURL,
+        error?.config?.url,
+      );
+
+      Alert.alert("오류", "갤러리 이미지 OCR 처리 중 문제가 발생했습니다.");
+    } finally {
+      setIsOcrLoading(false);
     }
   };
 
@@ -155,11 +242,22 @@ export default function ItemRegisterModelScreen({ navigation, route }: Props) {
           style={styles.input}
           autoCapitalize="characters"
         />
+        {isOcrLoading && (
+          <Text style={styles.ocrLoadingText}>
+            모델명을 인식하는 중이에요...
+          </Text>
+        )}
       </View>
 
       <View style={[styles.bottomArea, { bottom: insets.bottom }]}>
-        <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-          <Text style={styles.nextButtonText}>다음</Text>
+        <TouchableOpacity
+          style={styles.nextButton}
+          onPress={handleNext}
+          disabled={isSearching}
+        >
+          <Text style={styles.nextButtonText}>
+            {isSearching ? "제품 정보 확인 중..." : "다음"}
+          </Text>
         </TouchableOpacity>
       </View>
       <Modal
@@ -168,25 +266,62 @@ export default function ItemRegisterModelScreen({ navigation, route }: Props) {
         animationType="fade"
         onRequestClose={() => setImageActionVisible(false)}
       >
-        <View style={Modalstyles.modalOverlay}>
+        <View
+          style={[modalStyles.modalOverlay, { paddingBottom: insets.bottom }]}
+        >
           <Pressable
-            style={Modalstyles.modalBackdrop}
+            style={modalStyles.modalBackdrop}
             onPress={() => setImageActionVisible(false)}
           />
 
-          <View style={Modalstyles.imageActionContainer}>
+          <View style={modalStyles.profileImageSheet}>
+            <View style={modalStyles.sheetHandle} />
+
+            <Text style={modalStyles.sheetTitle}>이미지 선택</Text>
+            <Text style={modalStyles.sheetDescription}>
+              모델명을 자동으로 입력할 수 있어요
+            </Text>
+
             <TouchableOpacity
-              style={Modalstyles.imageActionButton}
+              style={modalStyles.sheetActionButton}
               onPress={handlePickFromGallery}
             >
-              <Text style={Modalstyles.imageActionText}>갤러리에서 선택</Text>
+              <View style={modalStyles.sheetActionIconWrap}>
+                <MaterialCommunityIcons
+                  name="image-outline"
+                  size={22}
+                  color={colors.primaryDark}
+                />
+              </View>
+
+              <View style={modalStyles.sheetActionTextWrap}>
+                <Text style={modalStyles.sheetActionTitle}>
+                  갤러리에서 선택
+                </Text>
+                <Text style={modalStyles.sheetActionSubtitle}>
+                  저장된 사진에서 모델명을 인식합니다
+                </Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={Modalstyles.imageActionButton}
+              style={modalStyles.sheetActionButton}
               onPress={handleTakePhoto}
             >
-              <Text style={Modalstyles.imageActionText}>직접 촬영</Text>
+              <View style={modalStyles.sheetActionIconWrap}>
+                <MaterialCommunityIcons
+                  name="camera-outline"
+                  size={22}
+                  color={colors.primaryDark}
+                />
+              </View>
+
+              <View style={modalStyles.sheetActionTextWrap}>
+                <Text style={modalStyles.sheetActionTitle}>직접 촬영</Text>
+                <Text style={modalStyles.sheetActionSubtitle}>
+                  카메라로 모델명을 촬영합니다
+                </Text>
+              </View>
             </TouchableOpacity>
           </View>
         </View>

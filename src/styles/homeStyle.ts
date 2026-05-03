@@ -47,21 +47,54 @@ export const homeStyles = StyleSheet.create({
   emptyBoxWrap: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 40,
+    paddingVertical: 36,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: "#F8FBFF",
+    borderColor: "#E3EEFB",
+  },
+
+  emptyIconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: colors.softBlue,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: "#D8E9FF",
   },
 
   emptyTitle: {
-    fontSize: typography.subtitle,
-    fontWeight: "700",
+    fontSize: 17,
+    fontWeight: "800",
     color: colors.textPrimary,
-    marginTop: spacing.lg,
     marginBottom: spacing.sm,
   },
 
   emptyDescription: {
-    fontSize: typography.body,
+    fontSize: 14,
+    fontWeight: "500",
     color: colors.textSecondary,
     textAlign: "center",
+    lineHeight: 21,
+  },
+
+  emptyHintBox: {
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 999,
+    backgroundColor: "#EDF6FF",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  emptyHintText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.primary,
   },
 
   summaryRow: {

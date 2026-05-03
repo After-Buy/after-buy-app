@@ -598,6 +598,13 @@ export const itemRegisterModelStyle = StyleSheet.create({
     fontWeight: "500",
   },
 
+  ocrLoadingText: {
+    marginTop: 10,
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: "center",
+  },
+
   titleWrap: {
     alignItems: "center",
     marginTop: 80,
@@ -1149,5 +1156,17 @@ export const itemDetailStyle = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 4,
+  },
+
+  textButtonLabelEditing: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: colors.primaryDark,
+  },
+
+  textButtonLabelSaved: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: colors.textPrimary,
   },
 });

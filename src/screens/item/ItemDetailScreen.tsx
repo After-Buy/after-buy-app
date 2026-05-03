@@ -12,9 +12,8 @@ import React, {
 } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
-  KeyboardAvoidingView,
+  Keyboard,
   Modal,
   Platform,
   Pressable,
@@ -24,10 +23,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AppHeader from "../../components/common/AppHeader";
 import { colors } from "../../constants/colors";
 import { deviceService } from "../../services/database/deviceService";
-import { notificationService } from "../../services/database/notificationService";
 import { itemDetailStyle as styles } from "../../styles/item/itemStyle";
 import { modalStyles } from "../../styles/modalStyle";
 import { RootStackParamList } from "../../types/navigation";
@@ -52,13 +51,20 @@ type DeviceDraft = {
 const createEmptyDraft = (
   folderId: number | null,
   modelName: string,
+  productInfo?: {
+    product_name?: string;
+    model_name?: string;
+    brand?: string;
+    image_url?: string;
+    product_link_url?: string;
+  },
 ): DeviceDraft => ({
   folder_id: folderId,
-  product_name: "",
-  model_name: modelName,
-  brand: "",
-  image_url: "",
-  product_link_url: "",
+  product_name: productInfo?.product_name ?? "",
+  model_name: productInfo?.model_name ?? modelName,
+  brand: productInfo?.brand ?? "",
+  image_url: productInfo?.image_url ?? "",
+  product_link_url: productInfo?.product_link_url ?? "",
   purchase_date: "",
   purchase_price: "",
   purchase_store: "",
@@ -68,6 +74,8 @@ const createEmptyDraft = (
 });
 
 export default function ItemDetailScreen({ navigation, route }: Props) {
+  const insets = useSafeAreaInsets();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const isCreateMode = !("deviceId" in route.params) || !route.params.deviceId;
   const deviceId =
     "deviceId" in route.params ? route.params.deviceId : undefined;
@@ -92,15 +100,51 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
     "year" | "month"
   >("year");
 
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
   const inputRef = useRef<TextInput>(null);
 
-  useEffect(() => {
-    if (modalVisible) {
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
+  const [noticeVisible, setNoticeVisible] = useState(false);
+  const [noticeTitle, setNoticeTitle] = useState("");
+  const [noticeMessage, setNoticeMessage] = useState("");
+  const noticeActionRef = useRef<(() => void) | null>(null);
+
+  const openNotice = (
+    title: string,
+    message: string,
+    onConfirm?: () => void,
+  ) => {
+    setNoticeTitle(title);
+    setNoticeMessage(message);
+    noticeActionRef.current = onConfirm ?? null;
+    setNoticeVisible(true);
+  };
+
+  const closeNotice = () => {
+    setNoticeVisible(false);
+
+    const action = noticeActionRef.current;
+    noticeActionRef.current = null;
+
+    if (action) {
+      action();
     }
-  }, [modalVisible]);
+  };
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   useEffect(() => {
     const init = async () => {
@@ -110,7 +154,10 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
         const modelName =
           "modelName" in route.params ? route.params.modelName : "";
 
-        setDraft(createEmptyDraft(folderId, modelName));
+        const productInfo =
+          "productInfo" in route.params ? route.params.productInfo : undefined;
+
+        setDraft(createEmptyDraft(folderId, modelName, productInfo));
         setIsLoading(false);
         return;
       }
@@ -120,9 +167,9 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
         const device = await deviceService.getDeviceById(deviceId as number);
 
         if (!device) {
-          Alert.alert("오류", "아이템 정보를 찾을 수 없습니다.", [
-            { text: "확인", onPress: () => navigation.goBack() },
-          ]);
+          openNotice("오류", "아이템 정보를 찾을 수 없습니다.", () => {
+            navigation.goBack();
+          });
           return;
         }
 
@@ -149,7 +196,7 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
           memo: device.memo ?? "",
         });
       } catch (error) {
-        Alert.alert("오류", "아이템 정보를 불러오지 못했습니다.");
+        openNotice("오류", "아이템 정보를 불러오지 못했습니다.");
       } finally {
         setIsLoading(false);
       }
@@ -157,6 +204,10 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
 
     init();
   }, [deviceId, isCreateMode, navigation, route.params]);
+
+  useEffect(() => {
+    console.log("[ItemDetail] route.params", route.params);
+  }, []);
 
   useLayoutEffect(() => {
     const parentTab = navigation.getParent();
@@ -394,32 +445,32 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
     if (!draft) return false;
 
     if (!draft.product_name.trim()) {
-      Alert.alert("안내", "상품명을 입력해주세요.");
+      openNotice("안내", "상품명을 입력해주세요.");
       return false;
     }
 
     if (!draft.model_name.trim()) {
-      Alert.alert("안내", "모델명이 올바르지 않습니다.");
+      openNotice("안내", "모델명이 올바르지 않습니다.");
       return false;
     }
 
     if (!draft.brand.trim()) {
-      Alert.alert("안내", "브랜드를 입력해주세요.");
+      openNotice("안내", "브랜드를 입력해주세요.");
       return false;
     }
 
     if (!draft.purchase_date.trim()) {
-      Alert.alert("안내", "구매일을 입력해주세요.");
+      openNotice("안내", "구매일을 입력해주세요.");
       return false;
     }
 
     if (!draft.purchase_price.trim()) {
-      Alert.alert("안내", "구매가를 입력해주세요.");
+      openNotice("안내", "구매가를 입력해주세요.");
       return false;
     }
 
     if (!draft.warranty_months.trim()) {
-      Alert.alert("안내", "보증기간을 입력해주세요.");
+      openNotice("안내", "보증기간을 입력해주세요.");
       return false;
     }
 
@@ -427,16 +478,101 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
     const warrantyMonths = Number(draft.warranty_months);
 
     if (Number.isNaN(price) || price <= 0) {
-      Alert.alert("안내", "구매가는 숫자로 입력해주세요.");
+      openNotice("안내", "구매가는 숫자로 입력해주세요.");
       return false;
     }
 
     if (Number.isNaN(warrantyMonths) || warrantyMonths <= 0) {
-      Alert.alert("안내", "보증기간을 입력해주세요.");
+      openNotice("안내", "보증기간을 입력해주세요.");
       return false;
     }
 
     return true;
+  };
+
+  const getFileExtension = (uri: string) => {
+    const cleanUri = uri.split("?")[0];
+    const extension = cleanUri.split(".").pop()?.toLowerCase();
+
+    if (!extension) return "jpg";
+
+    if (extension === "jpeg") return "jpeg";
+    if (extension === "png") return "png";
+    if (extension === "webp") return "webp";
+    if (extension === "jpg") return "jpg";
+
+    return "jpg";
+  };
+
+  const isLocalImageUri = (uri: string) => {
+    return uri.startsWith("file://") || uri.startsWith("content://");
+  };
+
+  const uploadImageIfNeeded = async (imageUri: string) => {
+    if (!imageUri) return "";
+
+    if (!isLocalImageUri(imageUri)) {
+      return imageUri;
+    }
+
+    const fileExtension = getFileExtension(imageUri);
+
+    const { presigned_url, image_url } =
+      await deviceService.getDeviceImagePresignedUrl(fileExtension);
+
+    await deviceService.uploadImageToS3(presigned_url, imageUri);
+
+    return image_url;
+  };
+
+  const getOCRModifiedFields = () => {
+    if (!draft) return [];
+
+    const ocrOriginalResult =
+      "ocrOriginalResult" in route.params
+        ? route.params.ocrOriginalResult
+        : null;
+
+    if (!ocrOriginalResult) return [];
+
+    const modifiedFields: string[] = [];
+
+    if (
+      ocrOriginalResult.model_name &&
+      ocrOriginalResult.model_name !== draft.model_name.trim()
+    ) {
+      modifiedFields.push("model_name");
+    }
+
+    if (
+      ocrOriginalResult.purchase_date &&
+      ocrOriginalResult.purchase_date !== draft.purchase_date.trim()
+    ) {
+      modifiedFields.push("purchase_date");
+    }
+
+    if (
+      ocrOriginalResult.purchase_price !== undefined &&
+      Number(ocrOriginalResult.purchase_price) !== Number(draft.purchase_price)
+    ) {
+      modifiedFields.push("purchase_price");
+    }
+
+    if (
+      ocrOriginalResult.purchase_store &&
+      ocrOriginalResult.purchase_store !== draft.purchase_store.trim()
+    ) {
+      modifiedFields.push("purchase_store");
+    }
+
+    if (
+      ocrOriginalResult.serial_number &&
+      ocrOriginalResult.serial_number !== draft.serial_number.trim()
+    ) {
+      modifiedFields.push("serial_number");
+    }
+
+    return modifiedFields;
   };
 
   const handlePressAction = async () => {
@@ -450,41 +586,35 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
     if (!validateDraft()) return;
 
     try {
+      console.log("[ItemDetail] 저장 시작", {
+        isCreateMode,
+        deviceId,
+        draft,
+      });
+
+      setIsUploadingImage(true);
+
+      console.log("[ItemDetail] 이미지 업로드 필요 여부 확인", {
+        imageUri: draft.image_url,
+      });
+
+      const uploadedImageUrl = await uploadImageIfNeeded(
+        draft.image_url.trim(),
+      );
+
+      console.log("[ItemDetail] 이미지 업로드 완료", {
+        uploadedImageUrl,
+      });
+
+      setIsUploadingImage(false);
       setIsSaving(true);
 
-      if (isCreateMode) {
-        await deviceService.createDevice({
-          user_id: 1,
-          folder_id: draft.folder_id,
-          product_name: draft.product_name.trim(),
-          model_name: draft.model_name.trim(),
-          brand: draft.brand.trim(),
-          image_url: draft.image_url.trim(),
-          product_link_url: draft.product_link_url.trim(),
-          purchase_date: draft.purchase_date.trim(),
-          purchase_price: Number(draft.purchase_price),
-          purchase_store: draft.purchase_store.trim(),
-          warranty_months: Number(draft.warranty_months),
-          serial_number: draft.serial_number.trim(),
-          memo: draft.memo.trim(),
-        });
-
-        await notificationService.syncNotificationsFromDevices();
-
-        Alert.alert("완료", "제품이 등록되었습니다.", [
-          {
-            text: "확인",
-            onPress: () => navigation.pop(2),
-          },
-        ]);
-        return;
-      }
-
-      await deviceService.updateDevice(deviceId as number, {
+      const payload = {
         folder_id: draft.folder_id,
         product_name: draft.product_name.trim(),
+        model_name: draft.model_name.trim(),
         brand: draft.brand.trim(),
-        image_url: draft.image_url.trim(),
+        image_url: uploadedImageUrl || null,
         product_link_url: draft.product_link_url.trim(),
         purchase_date: draft.purchase_date.trim(),
         purchase_price: Number(draft.purchase_price),
@@ -492,14 +622,83 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
         warranty_months: Number(draft.warranty_months),
         serial_number: draft.serial_number.trim(),
         memo: draft.memo.trim(),
-      });
+      };
+
+      console.log("[ItemDetail] 저장 요청 payload", payload);
+
+      if (isCreateMode) {
+        const result = await deviceService.createDevice(payload);
+        console.log("[ItemDetail] 제품 등록 성공", result);
+
+        const ocrLogId =
+          "ocrLogId" in route.params ? route.params.ocrLogId : null;
+
+        const modifiedFields = getOCRModifiedFields();
+
+        console.log("[OCR Modified] ocrLogId", ocrLogId);
+        console.log("[OCR Modified] modifiedFields", modifiedFields);
+
+        if (ocrLogId && modifiedFields.length > 0) {
+          console.log("[OCR Modified] 기록 API 호출 시작", {
+            ocrLogId,
+            deviceId: result.device_id,
+            modifiedFields,
+          });
+          try {
+            await deviceService.recordOCRModifiedFields({
+              ocrLogId,
+              deviceId: result.device_id,
+              modifiedFields,
+            });
+
+            console.log("[ItemDetail] OCR 오인식 필드 기록 성공", {
+              ocrLogId,
+              deviceId: result.device_id,
+              modifiedFields,
+            });
+          } catch (error) {
+            console.log("[ItemDetail] OCR 오인식 필드 기록 실패", error);
+          }
+        }
+
+        openNotice("완료", "제품이 등록되었습니다.", () => {
+          navigation.pop(2);
+        });
+        return;
+      }
+
+      const result = await deviceService.updateDevice(
+        deviceId as number,
+        payload,
+      );
+      console.log("[ItemDetail] 제품 수정 성공", result);
 
       setIsEditMode(false);
-      Alert.alert("완료", "제품 정보가 저장되었습니다.");
-    } catch (error) {
-      Alert.alert("오류", "저장 중 문제가 발생했습니다.");
+      openNotice("완료", "제품 정보가 저장되었습니다.");
+    } catch (error: any) {
+      console.log("[ItemDetail] 저장 실패", {
+        message: error?.message,
+        status: error?.response?.status,
+        data: error?.response?.data,
+        config: {
+          url: error?.config?.url,
+          method: error?.config?.method,
+          baseURL: error?.config?.baseURL,
+          data: error?.config?.data,
+        },
+      });
+
+      if (
+        error?.message?.includes("S3") ||
+        error?.message === "UPLOAD_FAILED"
+      ) {
+        openNotice("오류", "이미지 업로드에 실패했습니다.");
+      } else {
+        openNotice("오류", "저장 중 문제가 발생했습니다.");
+      }
     } finally {
       setIsSaving(false);
+      setIsUploadingImage(false);
     }
   };
 
@@ -996,12 +1195,32 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
         <AppHeader
           title="세부 정보"
           leftType="back"
-          rightText={isSaving ? "저장 중..." : buttonLabel}
           isEditing={isEditMode}
-          onPressLeft={() => {
-            navigation.goBack();
-          }}
-          onPressRight={handlePressAction}
+          rightComponent={
+            <TouchableOpacity
+              onPress={handlePressAction}
+              disabled={isSaving || isUploadingImage}
+              style={{
+                minWidth: 48,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {isSaving || isUploadingImage ? (
+                <ActivityIndicator size="small" color={colors.primaryDark} />
+              ) : (
+                <Text
+                  style={
+                    isEditMode
+                      ? styles.textButtonLabelEditing
+                      : styles.textButtonLabelSaved
+                  }
+                >
+                  {buttonLabel}
+                </Text>
+              )}
+            </TouchableOpacity>
+          }
         />
       </View>
 
@@ -1055,88 +1274,106 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
         visible={modalVisible}
         transparent
         animationType="fade"
-        onShow={() => inputRef.current?.focus()}
+        onShow={() => {
+          Keyboard.dismiss();
+
+          setTimeout(() => {
+            inputRef.current?.focus();
+          }, 250);
+        }}
         onRequestClose={closeFieldModal}
       >
-        <KeyboardAvoidingView
-          style={modalStyles.modalOverlay}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
+        <View style={modalStyles.modalRoot}>
           <Pressable
             style={modalStyles.modalBackdrop}
             onPress={closeFieldModal}
           />
-
-          <View style={modalStyles.inputModalCard}>
-            <Text style={modalStyles.inputModalTitle}>
-              {selectedField ? fieldMeta[selectedField]?.label : ""}
-              {selectedField && fieldMeta[selectedField]?.required && (
-                <Text style={{ color: colors.danger }}> *</Text>
-              )}
-            </Text>
-
-            <Text style={modalStyles.inputModalDescription}>
-              {selectedField
-                ? fieldMeta[selectedField]?.description ||
-                  "정보를 입력해주세요."
-                : ""}
-            </Text>
-
-            <TextInput
-              ref={inputRef}
-              value={modalValue}
-              onChangeText={setModalValue}
-              autoFocus
-              onFocus={() => console.log("input focused")}
-              showSoftInputOnFocus={true}
-              editable={true}
-              placeholder={
-                selectedField ? fieldMeta[selectedField]?.placeholder : ""
-              }
-              keyboardType={
-                selectedField
-                  ? (fieldMeta[selectedField]?.keyboardType ?? "default")
-                  : "default"
-              }
-              multiline={
-                selectedField ? fieldMeta[selectedField]?.multiline : false
-              }
-              maxLength={
-                selectedField ? fieldMeta[selectedField]?.maxLength : undefined
-              }
+          <View
+            pointerEvents="box-none"
+            style={modalStyles.keyboardSheetContainer}
+          >
+            <View
               style={[
-                modalStyles.inputModalInput,
-                selectedField &&
-                  fieldMeta[selectedField]?.multiline &&
-                  modalStyles.inputModalMultiline,
+                modalStyles.inputModalCard,
+                {
+                  marginBottom:
+                    keyboardHeight > 0
+                      ? keyboardHeight + 60
+                      : insets.bottom + 16,
+                },
               ]}
-            />
+            >
+              <Text style={modalStyles.inputModalTitle}>
+                {selectedField ? fieldMeta[selectedField]?.label : ""}
+                {selectedField && fieldMeta[selectedField]?.required && (
+                  <Text style={{ color: colors.danger }}> *</Text>
+                )}
+              </Text>
 
-            <View style={modalStyles.inputModalMetaRow}>
-              {!!selectedField && fieldMeta[selectedField]?.maxLength && (
-                <Text style={modalStyles.inputModalLength}>
-                  {modalValue.length}/{fieldMeta[selectedField]?.maxLength}
-                </Text>
-              )}
-            </View>
+              <Text style={modalStyles.inputModalDescription}>
+                {selectedField
+                  ? fieldMeta[selectedField]?.description ||
+                    "정보를 입력해주세요."
+                  : ""}
+              </Text>
 
-            <View style={modalStyles.inputModalButtonRow}>
-              <Pressable
-                style={modalStyles.inputModalCancelButton}
-                onPress={closeFieldModal}
-              >
-                <Text style={modalStyles.inputModalCancelText}>취소</Text>
-              </Pressable>
+              <TextInput
+                ref={inputRef}
+                value={modalValue}
+                onChangeText={setModalValue}
+                onFocus={() => console.log("input focused")}
+                showSoftInputOnFocus={true}
+                editable={true}
+                placeholder={
+                  selectedField ? fieldMeta[selectedField]?.placeholder : ""
+                }
+                keyboardType={
+                  selectedField
+                    ? (fieldMeta[selectedField]?.keyboardType ?? "default")
+                    : "default"
+                }
+                multiline={
+                  selectedField ? fieldMeta[selectedField]?.multiline : false
+                }
+                maxLength={
+                  selectedField
+                    ? fieldMeta[selectedField]?.maxLength
+                    : undefined
+                }
+                style={[
+                  modalStyles.inputModalInput,
+                  selectedField &&
+                    fieldMeta[selectedField]?.multiline &&
+                    modalStyles.inputModalMultiline,
+                ]}
+              />
 
-              <Pressable
-                style={modalStyles.inputModalConfirmButton}
-                onPress={applyFieldModal}
-              >
-                <Text style={modalStyles.inputModalConfirmText}>적용</Text>
-              </Pressable>
+              <View style={modalStyles.inputModalMetaRow}>
+                {!!selectedField && fieldMeta[selectedField]?.maxLength && (
+                  <Text style={modalStyles.inputModalLength}>
+                    {modalValue.length}/{fieldMeta[selectedField]?.maxLength}
+                  </Text>
+                )}
+              </View>
+
+              <View style={modalStyles.inputModalButtonRow}>
+                <Pressable
+                  style={modalStyles.inputModalCancelButton}
+                  onPress={closeFieldModal}
+                >
+                  <Text style={modalStyles.inputModalCancelText}>취소</Text>
+                </Pressable>
+
+                <Pressable
+                  style={modalStyles.inputModalConfirmButton}
+                  onPress={applyFieldModal}
+                >
+                  <Text style={modalStyles.inputModalConfirmText}>적용</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
       <Modal
         visible={imageActionVisible}
@@ -1144,7 +1381,9 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
         animationType="fade"
         onRequestClose={() => setImageActionVisible(false)}
       >
-        <View style={modalStyles.modalOverlay}>
+        <View
+          style={[modalStyles.modalOverlay, { paddingBottom: insets.bottom }]}
+        >
           <Pressable
             style={modalStyles.modalBackdrop}
             onPress={() => setImageActionVisible(false)}
@@ -1153,7 +1392,7 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
           <View style={modalStyles.profileImageSheet}>
             <View style={modalStyles.sheetHandle} />
 
-            <Text style={modalStyles.sheetTitle}>프로필 이미지 변경</Text>
+            <Text style={modalStyles.sheetTitle}>아이템 이미지 변경</Text>
             <Text style={modalStyles.sheetDescription}>
               갤러리에서 이미지를 선택하거나 직접 촬영할 수 있어요.
             </Text>
@@ -1294,6 +1533,27 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
               >
                 <Text style={modalStyles.inputModalConfirmText}>적용</Text>
               </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      <Modal visible={noticeVisible} transparent animationType="fade">
+        <View style={modalStyles.confirmOverlay}>
+          <View style={modalStyles.confirmBox}>
+            <Text style={modalStyles.confirmTitle}>{noticeTitle}</Text>
+
+            <Text style={modalStyles.confirmText}>{noticeMessage}</Text>
+
+            <View style={modalStyles.confirmButtons}>
+              <TouchableOpacity
+                style={[
+                  modalStyles.confirmButton,
+                  modalStyles.confirmConfirmButton,
+                ]}
+                onPress={closeNotice}
+              >
+                <Text style={modalStyles.confirmConfirmText}>확인</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
