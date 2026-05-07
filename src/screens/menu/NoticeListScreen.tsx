@@ -1,65 +1,23 @@
 import { colors } from "@/src/constants/colors";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { FlatList, Text, TouchableOpacity, View } from "react-native";
 import AppHeader from "../../components/common/AppHeader";
+import {
+  getAnnouncements,
+  NoticeListItem,
+} from "../../services/api/announcementApi";
 import { noticeListStyles } from "../../styles/menu/menuStyle";
 
 type NoticeCategory = "전체" | "안내" | "점검" | "업데이트";
 
-const MOCK_NOTICES = [
-  {
-    noticeId: 1,
-    category: "안내",
-    title: "[안내] After-Buy 서비스 정식 출시 안내",
-    content: "After-Buy 서비스가 정식 출시되었습니다.",
-    createdAt: "2026-03-01",
-    isRead: false,
-  },
-  {
-    noticeId: 2,
-    category: "업데이트",
-    title: "[업데이트] OCR 인식 정확도 개선 안내",
-    content: "영수증 및 제품 정보 인식 정확도가 개선되었습니다.",
-    createdAt: "2026-03-05",
-    isRead: false,
-  },
-  {
-    noticeId: 3,
-    category: "안내",
-    title: "[안내] 보증기간 알림 기능 사용 방법 안내",
-    content: "보증 만료 전에 알림을 받을 수 있습니다.",
-    createdAt: "2026-03-07",
-    isRead: true,
-  },
-  {
-    noticeId: 4,
-    category: "점검",
-    title: "[점검] 3월 2주차 서버 점검 안내",
-    content: "서비스 안정화를 위한 점검이 진행됩니다.",
-    createdAt: "2026-03-10",
-    isRead: true,
-  },
-  {
-    noticeId: 5,
-    category: "업데이트",
-    title: "[업데이트] 서비스 센터 찾기 기능 개선",
-    content: "더 정확한 위치 기반 검색이 가능합니다.",
-    createdAt: "2026-03-12",
-    isRead: false,
-  },
-  {
-    noticeId: 6,
-    category: "안내",
-    title: "[안내] 계정 및 데이터 정책 안내",
-    content: "사용자 데이터 보호 정책이 업데이트되었습니다.",
-    createdAt: "2026-03-15",
-    isRead: true,
-  },
-];
-
-const CATEGORIES: NoticeCategory[] = ["전체", "안내", "점검", "업데이트"];
+const CATEGORIES = [
+  { label: "전체", value: "ALL" },
+  { label: "안내", value: "NOTICE" },
+  { label: "점검", value: "MAINTENANCE" },
+  { label: "업데이트", value: "UPDATE" },
+] as const;
 
 const CATEGORY_STYLE = {
   안내: {
@@ -94,13 +52,57 @@ const CATEGORY_STYLE = {
 
 export default function NoticeListScreen() {
   const navigation = useNavigation<any>();
-  const [selectedCategory, setSelectedCategory] =
-    useState<NoticeCategory>("전체");
+  const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [notices, setNotices] = useState<NoticeListItem[]>([]);
+  const [pinnedNotices, setPinnedNotices] = useState<NoticeListItem[]>([]);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalCount: 0,
+    size: 10,
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredData = useMemo(() => {
-    if (selectedCategory === "전체") return MOCK_NOTICES;
-    return MOCK_NOTICES.filter((item) => item.category === selectedCategory);
-  }, [selectedCategory]);
+  const listRef = useRef<FlatList>(null);
+
+  const loadAnnouncements = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const result = await getAnnouncements({
+        category: selectedCategory as any,
+        page,
+        size: 10,
+      });
+
+      setPinnedNotices(result.pinnedAnnouncements);
+      setNotices(result.announcements);
+      setPagination(result.pagination);
+    } catch (e) {
+      console.log("[공지사항 목록 조회 실패]", e);
+      setError("공지사항을 불러오지 못했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAnnouncements();
+  }, [selectedCategory, page]);
+
+  useEffect(() => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+  }, [page, selectedCategory]);
+
+  const listData = [
+    ...pinnedNotices,
+    ...notices.filter(
+      (n) => !pinnedNotices.some((p) => p.noticeId === n.noticeId),
+    ),
+  ];
 
   return (
     <View style={noticeListStyles.screen}>
@@ -110,38 +112,44 @@ export default function NoticeListScreen() {
 
       <View style={noticeListStyles.categoryWrap}>
         {CATEGORIES.map((category) => {
-          const isSelected = category === selectedCategory;
+          const isSelected = category.value === selectedCategory;
+
+          const styleKey = category.label as NoticeCategory;
+
           return (
             <TouchableOpacity
-              key={category}
+              key={category.value}
               activeOpacity={0.85}
               style={[
                 noticeListStyles.categoryChip,
                 {
                   backgroundColor: isSelected
-                    ? CATEGORY_STYLE[category].selectedBg
-                    : CATEGORY_STYLE[category].bg,
+                    ? CATEGORY_STYLE[styleKey].selectedBg
+                    : CATEGORY_STYLE[styleKey].bg,
 
                   borderColor: isSelected
-                    ? CATEGORY_STYLE[category].selectedBg
-                    : CATEGORY_STYLE[category].border,
+                    ? CATEGORY_STYLE[styleKey].selectedBg
+                    : CATEGORY_STYLE[styleKey].border,
 
                   borderWidth: 1.2,
                 },
               ]}
-              onPress={() => setSelectedCategory(category)}
+              onPress={() => {
+                setSelectedCategory(category.value);
+                setPage(1);
+              }}
             >
               <Text
                 style={[
                   noticeListStyles.categoryText,
                   {
                     color: isSelected
-                      ? CATEGORY_STYLE[category].selectedText
-                      : CATEGORY_STYLE[category].text,
+                      ? CATEGORY_STYLE[styleKey].selectedText
+                      : CATEGORY_STYLE[styleKey].text,
                   },
                 ]}
               >
-                {category}
+                {category.label}
               </Text>
             </TouchableOpacity>
           );
@@ -152,19 +160,33 @@ export default function NoticeListScreen() {
         서비스 안내, 점검, 업데이트 소식을 확인해보세요.
       </Text>
 
+      {error && (
+        <Text style={{ color: "#EF4444", textAlign: "center", marginTop: 6 }}>
+          {error}
+        </Text>
+      )}
+
       <View style={noticeListStyles.topDivider} />
 
       <FlatList
-        data={filteredData}
+        ref={listRef}
+        data={listData}
         keyExtractor={(item) => String(item.noticeId)}
-        contentContainerStyle={noticeListStyles.listContent}
+        contentContainerStyle={[
+          noticeListStyles.listContent,
+          listData.length === 0 && noticeListStyles.emptyListContent,
+        ]}
         ListEmptyComponent={
-          <View style={noticeListStyles.emptyWrap}>
-            <Text style={noticeListStyles.emptyTitle}>공지사항이 없습니다</Text>
-            <Text style={noticeListStyles.emptyDescription}>
-              선택한 카테고리에 해당하는 공지사항이 아직 없어요.
-            </Text>
-          </View>
+          !loading ? (
+            <View style={noticeListStyles.emptyWrap}>
+              <Text style={noticeListStyles.emptyTitle}>
+                공지사항이 없습니다
+              </Text>
+              <Text style={noticeListStyles.emptyDescription}>
+                선택한 카테고리에 해당하는 공지사항이 아직 없어요.
+              </Text>
+            </View>
+          ) : null
         }
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -175,7 +197,7 @@ export default function NoticeListScreen() {
             ]}
             onPress={() =>
               navigation.navigate("NoticeDetail", {
-                notice: item,
+                noticeId: item.noticeId,
               })
             }
           >
@@ -233,6 +255,52 @@ export default function NoticeListScreen() {
           </TouchableOpacity>
         )}
       />
+      <View style={noticeListStyles.fixedPaginationArea}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          disabled={page <= 1}
+          style={[
+            noticeListStyles.pageButton,
+            page <= 1 && noticeListStyles.pageButtonDisabled,
+          ]}
+          onPress={() => setPage((prev) => Math.max(prev - 1, 1))}
+        >
+          <MaterialCommunityIcons
+            name="chevron-left"
+            size={20}
+            color={page <= 1 ? "#94A3B8" : colors.white}
+          />
+        </TouchableOpacity>
+
+        <View style={noticeListStyles.pageIndicator}>
+          <Text style={noticeListStyles.pageCurrentText}>{page}</Text>
+          <Text style={noticeListStyles.pageSlashText}>/</Text>
+          <Text style={noticeListStyles.pageTotalText}>
+            {Math.max(pagination.totalPages, 1)}
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          activeOpacity={0.8}
+          disabled={page >= pagination.totalPages}
+          style={[
+            noticeListStyles.pageButton,
+            page >= pagination.totalPages &&
+              noticeListStyles.pageButtonDisabled,
+          ]}
+          onPress={() =>
+            setPage((prev) =>
+              Math.min(prev + 1, Math.max(pagination.totalPages, 1)),
+            )
+          }
+        >
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={20}
+            color={page >= pagination.totalPages ? "#94A3B8" : colors.white}
+          />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

@@ -1,3 +1,5 @@
+import { runUnauthorizedHandler } from "@/src/services/api/api";
+import { authApi } from "@/src/services/api/authapi";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useNavigation } from "@react-navigation/native";
 import React, { useState } from "react";
@@ -18,18 +20,33 @@ export default function WithdrawNoticeScreen() {
   const [agreed, setAgreed] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
 
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [errorVisible, setErrorVisible] = useState(false);
+
   const handlePressWithdraw = () => {
     if (!agreed) return;
     setConfirmVisible(true);
   };
 
-  const handleConfirmWithdraw = () => {
-    setConfirmVisible(false);
+  const handleConfirmWithdraw = async () => {
+    try {
+      setIsWithdrawing(true);
 
-    // TODO: 실제 API 연결
-    // await authService.withdraw();
+      await authApi.withdraw();
 
-    navigation.goBack();
+      setConfirmVisible(false);
+      setIsWithdrawing(false);
+
+      setTimeout(() => {
+        runUnauthorizedHandler();
+      }, 500);
+    } catch (error) {
+      console.log("[WITHDRAW_ERROR]", error);
+      setConfirmVisible(false);
+      setErrorVisible(true);
+    } finally {
+      setIsWithdrawing(false);
+    }
   };
 
   return (
@@ -168,8 +185,49 @@ export default function WithdrawNoticeScreen() {
               <Pressable
                 style={withdrawStyles.confirmButton}
                 onPress={handleConfirmWithdraw}
+                disabled={isWithdrawing}
               >
-                <Text style={withdrawStyles.confirmButtonText}>탈퇴하기</Text>
+                <Text style={withdrawStyles.confirmButtonText}>
+                  {isWithdrawing ? "탈퇴 중..." : "탈퇴하기"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={errorVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setErrorVisible(false)}
+      >
+        <View style={withdrawStyles.modalOverlay}>
+          <Pressable
+            style={withdrawStyles.modalBackdrop}
+            onPress={() => setErrorVisible(false)}
+          />
+
+          <View style={withdrawStyles.confirmCard}>
+            <View style={withdrawStyles.confirmIconWrap}>
+              <MaterialCommunityIcons
+                name="alert-circle-outline"
+                size={24}
+                color={colors.danger}
+              />
+            </View>
+
+            <Text style={withdrawStyles.confirmTitle}>탈퇴 실패</Text>
+
+            <Text style={withdrawStyles.confirmDescription}>
+              회원탈퇴 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.
+            </Text>
+
+            <View style={withdrawStyles.confirmButtonRow}>
+              <Pressable
+                style={withdrawStyles.confirmButton}
+                onPress={() => setErrorVisible(false)}
+              >
+                <Text style={withdrawStyles.confirmButtonText}>확인</Text>
               </Pressable>
             </View>
           </View>

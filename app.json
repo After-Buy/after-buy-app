@@ -21,6 +21,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "pan",
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA",
@@ -68,7 +69,8 @@
       ],
       "@react-native-community/datetimepicker",
       "expo-web-browser",
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -1,6 +1,14 @@
 import { useNavigation } from "@react-navigation/native";
+import * as Clipboard from "expo-clipboard";
 import React, { useEffect, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import {
+  Modal,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import AppHeader from "../../components/common/AppHeader";
 import ErrorState from "../../components/common/error/ErrorState";
 import HomeAssetSection from "../../components/common/home/HomeAssetSection";
@@ -8,6 +16,7 @@ import RegisterPromoCard from "../../components/common/home/RegisterPromoCard";
 import WarrantyAlertCard from "../../components/common/home/WarrantyAlertCard";
 import { deviceService } from "../../services/database/deviceService";
 import { homeStyles } from "../../styles/homeStyle";
+import { modalStyles } from "../../styles/modalStyle";
 import { HomeData, HomeStatus } from "../../types/home";
 import { HomeScreenProps } from "../../types/navigation";
 
@@ -25,10 +34,37 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [status, setStatus] = useState<HomeStatus>("loaded");
   const [homeData, setHomeData] = useState<HomeData>(emptyHomeData);
   const rootNavigation = useNavigation<any>();
+  const [noticeVisible, setNoticeVisible] = useState(false);
+  const [noticeTitle, setNoticeTitle] = useState("");
+  const [noticeMessage, setNoticeMessage] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await loadHomeData();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const openNotice = (title: string, message: string) => {
+    setNoticeTitle(title);
+    setNoticeMessage(message);
+    setNoticeVisible(true);
+  };
+
+  const closeNotice = () => {
+    setNoticeVisible(false);
+  };
 
   const loadHomeData = async () => {
     try {
       const data = await deviceService.getHomeData();
+
+      console.log("[HOME DATA]", data);
+      console.log("[HOME WARRANTY ALERT AFTER LOAD]", data.warrantyAlert);
+
       setHomeData(data);
 
       const isEmpty =
@@ -40,6 +76,51 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     } catch (error) {
       setStatus("error");
     }
+  };
+
+  const handlePressWarrantyServiceCenter = async () => {
+    try {
+      const item = homeData.warrantyAlert;
+
+      if (!item?.id) {
+        openNotice("안내", "서비스 센터를 검색할 제품 정보가 없습니다.");
+        return;
+      }
+
+      const detail = await deviceService.getDeviceById(item.id);
+
+      const brand = detail?.brand?.trim();
+
+      if (!brand) {
+        openNotice(
+          "안내",
+          "브랜드 정보가 없어 서비스 센터를 검색할 수 없습니다.",
+        );
+        return;
+      }
+
+      rootNavigation.navigate("ServiceCenterMap", {
+        brand,
+        productName: detail?.product_name ?? item.name,
+      });
+    } catch (error) {
+      console.log("[HOME_SERVICE_CENTER_ERROR]", error);
+      openNotice("안내", "서비스 센터 정보를 불러오지 못했습니다.");
+    }
+  };
+
+  const handleCopyProductLink = async () => {
+    console.log("[HOME WARRANTY ALERT]", homeData.warrantyAlert);
+
+    const link = homeData.warrantyAlert?.productLink?.trim();
+
+    if (!link) {
+      openNotice("안내", "복사할 제품 정보 링크가 없습니다.");
+      return;
+    }
+
+    await Clipboard.setStringAsync(link);
+    openNotice("완료", "제품 정보 링크가 복사되었습니다.");
   };
 
   useEffect(() => {
@@ -68,7 +149,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         <AppHeader title="홈" leftType="none" rightType="none" />
       </View>
 
-      <ScrollView contentContainerStyle={homeStyles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={homeStyles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <HomeAssetSection
           summary={homeData.summary}
           recentItems={homeData.recentItems}
@@ -96,17 +182,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
         <WarrantyAlertCard
           item={homeData.warrantyAlert}
-          onPressProductLink={() => {
-            if (homeData.warrantyAlert?.productLink) {
-              console.log(
-                "제품 정보 링크 이동:",
-                homeData.warrantyAlert.productLink,
-              );
-            }
-          }}
-          onPressServiceCenter={() => {
-            console.log("가까운 서비스 센터 이동");
-          }}
+          onPressProductLink={handleCopyProductLink}
+          onPressServiceCenter={handlePressWarrantyServiceCenter}
           onPressItem={(id) => {
             rootNavigation.navigate("ItemDetail", {
               deviceId: id,
@@ -115,6 +192,27 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           }}
         />
       </ScrollView>
+      <Modal visible={noticeVisible} transparent animationType="fade">
+        <View style={modalStyles.confirmOverlay}>
+          <View style={modalStyles.confirmBox}>
+            <Text style={modalStyles.confirmTitle}>{noticeTitle}</Text>
+
+            <Text style={modalStyles.confirmText}>{noticeMessage}</Text>
+
+            <View style={modalStyles.confirmButtons}>
+              <TouchableOpacity
+                style={[
+                  modalStyles.confirmButton,
+                  modalStyles.confirmConfirmButton,
+                ]}
+                onPress={closeNotice}
+              >
+                <Text style={modalStyles.confirmConfirmText}>확인</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

@@ -1,10 +1,14 @@
-import { authService } from "@/src/services/database/authService";
+import { runUnauthorizedHandler } from "@/src/services/api/api";
+import { authApi } from "@/src/services/api/authapi";
+import { modalStyles } from "@/src/styles/modalStyle";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import React, { useCallback, useState } from "react";
 import {
-  Alert,
   Image,
+  Modal,
+  Pressable,
   RefreshControl,
   ScrollView,
   Text,
@@ -73,22 +77,26 @@ export default function MenuScreen() {
     profileImage: null as string | null,
   });
 
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [logoutErrorVisible, setLogoutErrorVisible] = useState(false);
+
   const loadMenuData = useCallback(async () => {
     try {
       setStatus("loading");
 
-      const p = await authService.getMyProfile();
+      const p = await authApi.getMyProfile();
 
       if (!p) throw new Error();
 
       setProfile({
         nickname: p.nickname,
         email: p.email,
-        profileImage: p.profile_image_url,
+        profileImage: p.profileImageUrl,
       });
 
       setStatus("loaded");
     } catch (error) {
+      console.log("[MENU_PROFILE_LOAD_ERROR]", error);
       setStatus("error");
     }
   }, []);
@@ -96,14 +104,11 @@ export default function MenuScreen() {
   const onRefresh = useCallback(async () => {
     try {
       setIsRefreshing(true);
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      setStatus("loaded");
-    } catch (error) {
-      setStatus("error");
+      await loadMenuData();
     } finally {
       setIsRefreshing(false);
     }
-  }, []);
+  }, [loadMenuData]);
 
   useFocusEffect(
     useCallback(() => {
@@ -124,23 +129,28 @@ export default function MenuScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert("로그아웃", "정말 로그아웃하시겠습니까?", [
-      { text: "취소", style: "cancel" },
-      {
-        text: "로그아웃",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            // TODO:
-            // await authService.logout();
-            // await clearAuthStorage();
-            // navigation reset 처리
-          } catch (error) {
-            Alert.alert("오류", "로그아웃에 실패했습니다.");
-          }
-        },
-      },
-    ]);
+    setLogoutModalVisible(true);
+  };
+
+  const handleConfirmLogout = async () => {
+    try {
+      const refreshToken = await AsyncStorage.getItem("refreshToken");
+
+      if (refreshToken) {
+        await authApi.logout(refreshToken);
+      }
+
+      setLogoutModalVisible(false);
+
+      runUnauthorizedHandler();
+    } catch (error: any) {
+      console.log("[LOGOUT_ERROR_STATUS]", error.response?.status);
+      console.log("[LOGOUT_ERROR_DATA]", error.response?.data);
+      console.log("[LOGOUT_ERROR_MESSAGE]", error.message);
+
+      setLogoutModalVisible(false);
+      setLogoutErrorVisible(true);
+    }
   };
 
   if (status === "error") {
@@ -243,6 +253,82 @@ export default function MenuScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <Modal
+        visible={logoutModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLogoutModalVisible(false)}
+      >
+        <View style={modalStyles.confirmOverlay}>
+          <View style={modalStyles.confirmBox}>
+            <MaterialCommunityIcons
+              name="logout"
+              size={30}
+              color={colors.danger}
+              style={{ alignSelf: "center" }}
+            />
+
+            <Text style={modalStyles.confirmText}>
+              현재 계정에서 로그아웃하시겠습니까?
+            </Text>
+
+            <View style={modalStyles.confirmButtons}>
+              <Pressable
+                style={modalStyles.confirmButton}
+                onPress={() => setLogoutModalVisible(false)}
+              >
+                <Text style={modalStyles.confirmCancelText}>취소</Text>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  modalStyles.confirmButton,
+                  modalStyles.confirmConfirmButton,
+                ]}
+                onPress={handleConfirmLogout}
+              >
+                <Text style={modalStyles.confirmConfirmText}>로그아웃</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={logoutErrorVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLogoutErrorVisible(false)}
+      >
+        <View style={modalStyles.confirmOverlay}>
+          <View style={modalStyles.confirmBox}>
+            <MaterialCommunityIcons
+              name="alert-circle-outline"
+              size={30}
+              color={colors.danger}
+              style={{ alignSelf: "center" }}
+            />
+
+            <Text style={modalStyles.confirmTitle}>오류 발생</Text>
+
+            <Text style={modalStyles.confirmText}>
+              로그아웃 처리 중 문제가 발생했습니다.
+            </Text>
+
+            <View style={modalStyles.confirmButtons}>
+              <Pressable
+                style={[
+                  modalStyles.confirmButton,
+                  modalStyles.confirmConfirmButton,
+                  { marginLeft: 0 },
+                ]}
+                onPress={() => setLogoutErrorVisible(false)}
+              >
+                <Text style={modalStyles.confirmConfirmText}>확인</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

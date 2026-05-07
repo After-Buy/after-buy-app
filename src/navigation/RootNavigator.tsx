@@ -1,8 +1,11 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ItemDetailScreen from "../screens/item/ItemDetailScreen";
 import ItemRegisterModelScreen from "../screens/item/ItemRegisterModelScreen";
 import OCRCameraScreen from "../screens/OCR/OCRCameraScreen";
+import ServiceCenterMapScreen from "../screens/serviceCenter/ServiceCenterMapScreen";
+import { setUnauthorizedHandler } from "../services/api/api";
 import { RootStackParamList } from "../types/navigation";
 import AuthNavigator from "./AuthNavigator";
 import MainTabNavigator from "./MainTabNavigator";
@@ -15,6 +18,29 @@ export default function RootNavigator() {
   const handleLogin = () => {
     setIsLogin(true);
   };
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem("accessToken");
+    await AsyncStorage.removeItem("refreshToken");
+    setIsLogin(false);
+  };
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      handleLogout();
+    });
+  }, []);
+
+  useEffect(() => {
+    const checkLogin = async () => {
+      const token = await AsyncStorage.getItem("accessToken");
+      if (token) {
+        setIsLogin(true);
+      }
+    };
+
+    checkLogin();
+  }, []);
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -34,6 +60,11 @@ export default function RootNavigator() {
           <Stack.Screen
             name="OCRCamera"
             component={OCRCameraScreen}
+            options={{ animation: "fade_from_bottom" }}
+          />
+          <Stack.Screen
+            name="ServiceCenterMap"
+            component={ServiceCenterMapScreen}
             options={{ animation: "fade_from_bottom" }}
           />
         </>

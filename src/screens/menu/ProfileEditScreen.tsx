@@ -1,11 +1,10 @@
-import { authService } from "@/src/services/database/authService";
+import { authApi } from "@/src/services/api/authapi";
 import { modalStyles } from "@/src/styles/modalStyle";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import * as ImagePicker from "expo-image-picker";
 import { useNavigation } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Alert,
   Image,
   Keyboard,
   Modal,
@@ -40,6 +39,14 @@ export default function ProfileEditScreen() {
 
   const [email, setEmail] = useState("");
 
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const showErrorModal = (message: string) => {
+    setErrorMessage(message);
+    setErrorModalVisible(true);
+  };
+
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardDidShow", (event) => {
       setKeyboardHeight(event.endCoordinates.height);
@@ -57,13 +64,14 @@ export default function ProfileEditScreen() {
 
   useEffect(() => {
     const load = async () => {
-      const profile = await authService.getMyProfile();
+      const profile = await authApi.getMyProfile();
+      console.log("[PROFILE LOAD]", profile);
 
       if (!profile) return;
 
       setNickname(profile.nickname);
       setTempNickname(profile.nickname);
-      setProfileImageUri(profile.profile_image_url);
+      setProfileImageUri(profile.profileImageUrl);
       setEmail(profile.email);
     };
 
@@ -91,11 +99,69 @@ export default function ProfileEditScreen() {
     if (result.canceled) return;
 
     const asset = result.assets[0];
-    await authService.patchMyProfile({
-      profile_image_url: asset.uri,
+
+    console.log("[STEP1] asset", {
+      uri: asset.uri,
+      mimeType: asset.mimeType,
+      fileName: asset.fileName,
     });
-    setProfileImageUri(asset.uri);
-    setImageActionVisible(false);
+
+    try {
+      const ext = asset.uri.split(".").pop();
+
+      console.log("[STEP2] ext", ext);
+
+      const { presigned_url, image_url } =
+        await authApi.getProfileImagePresignedUrl(ext!);
+
+      console.log("[STEP3] presigned", {
+        presigned_url,
+        image_url,
+      });
+
+      const blob = await (await fetch(asset.uri)).blob();
+
+      console.log("[STEP4] blob", {
+        type: blob.type,
+        size: blob.size,
+      });
+
+      const uploadRes = await fetch(presigned_url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": blob.type || "image/jpeg",
+        },
+        body: blob,
+      });
+
+      console.log("[STEP5] upload result", {
+        status: uploadRes.status,
+        ok: uploadRes.ok,
+      });
+
+      if (!uploadRes.ok) {
+        const text = await uploadRes.text();
+        console.log("[STEP5 ERROR BODY]", text);
+        throw new Error("S3 upload failed");
+      }
+
+      await authApi.updateMyProfile({
+        profileImageUrl: image_url,
+      });
+
+      setProfileImageUri(image_url);
+      setImageActionVisible(false);
+    } catch (error: any) {
+      console.log(
+        "[PROFILE_IMAGE_UPLOAD_ERROR_STATUS]",
+        error.response?.status,
+      );
+      console.log("[PROFILE_IMAGE_UPLOAD_ERROR_DATA]", error.response?.data);
+      console.log("[PROFILE_IMAGE_UPLOAD_ERROR_MESSAGE]", error.message);
+      console.log("[PROFILE_IMAGE_UPLOAD_ERROR_FULL]", error);
+
+      showErrorModal("이미지 업로드에 실패했습니다.");
+    }
   };
 
   const handleTakePhoto = async () => {
@@ -109,11 +175,69 @@ export default function ProfileEditScreen() {
     if (result.canceled) return;
 
     const asset = result.assets[0];
-    await authService.patchMyProfile({
-      profile_image_url: asset.uri,
+
+    console.log("[STEP1] asset", {
+      uri: asset.uri,
+      mimeType: asset.mimeType,
+      fileName: asset.fileName,
     });
-    setProfileImageUri(asset.uri);
-    setImageActionVisible(false);
+
+    try {
+      const ext = asset.uri.split(".").pop()?.toLowerCase() || "jpg";
+
+      console.log("[STEP2] ext", ext);
+
+      const { presigned_url, image_url } =
+        await authApi.getProfileImagePresignedUrl(ext);
+
+      console.log("[STEP3] presigned", {
+        presigned_url,
+        image_url,
+      });
+
+      const blob = await (await fetch(asset.uri)).blob();
+
+      console.log("[STEP4] blob", {
+        type: blob.type,
+        size: blob.size,
+      });
+
+      const uploadRes = await fetch(presigned_url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": blob.type || "image/jpeg",
+        },
+        body: blob,
+      });
+
+      console.log("[STEP5] upload result", {
+        status: uploadRes.status,
+        ok: uploadRes.ok,
+      });
+
+      if (!uploadRes.ok) {
+        const text = await uploadRes.text();
+        console.log("[STEP5 ERROR BODY]", text);
+        throw new Error("S3 upload failed");
+      }
+
+      await authApi.updateMyProfile({
+        profileImageUrl: image_url,
+      });
+
+      setProfileImageUri(image_url);
+      setImageActionVisible(false);
+    } catch (error: any) {
+      console.log(
+        "[PROFILE_IMAGE_UPLOAD_ERROR_STATUS]",
+        error.response?.status,
+      );
+      console.log("[PROFILE_IMAGE_UPLOAD_ERROR_DATA]", error.response?.data);
+      console.log("[PROFILE_IMAGE_UPLOAD_ERROR_MESSAGE]", error.message);
+      console.log("[PROFILE_IMAGE_UPLOAD_ERROR_FULL]", error);
+
+      showErrorModal("이미지 업로드에 실패했습니다.");
+    }
   };
 
   const handleSaveNickname = async () => {
@@ -132,17 +256,13 @@ export default function ProfileEditScreen() {
     try {
       setIsSubmittingNickname(true);
 
-      // TODO: 실제 API 연결 전 임시 반영
-      await authService.patchMyProfile({ nickname: trimmed });
-      setNickname(trimmed);
-
-      // 실제 연결 시 예시
-      // await userService.updateMe({ nickname: trimmed });
+      const updated = await authApi.updateMyProfile({ nickname: trimmed });
+      setNickname(updated.nickname);
 
       setNicknameModalVisible(false);
       setNicknameError("");
     } catch (error) {
-      Alert.alert("오류", "닉네임 수정 중 문제가 발생했습니다.");
+      showErrorModal("닉네임 수정 중 문제가 발생했습니다.");
     } finally {
       setIsSubmittingNickname(false);
     }
@@ -180,7 +300,7 @@ export default function ProfileEditScreen() {
           </View>
 
           <Text style={profileEditStyles.heroName}>{nickname}</Text>
-          <Text style={profileEditStyles.heroEmail}>gachon@gachon.ac.kr</Text>
+          <Text style={profileEditStyles.heroEmail}>{email}</Text>
 
           <TouchableOpacity
             activeOpacity={0.85}
@@ -242,9 +362,7 @@ export default function ProfileEditScreen() {
               </View>
             </View>
 
-            <Text style={profileEditStyles.infoValueDisabled}>
-              gachon@gachon.ac.kr
-            </Text>
+            <Text style={profileEditStyles.infoValueDisabled}>{email}</Text>
           </View>
         </View>
 
@@ -419,6 +537,40 @@ export default function ProfileEditScreen() {
                   </Text>
                 </Pressable>
               </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={errorModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setErrorModalVisible(false)}
+      >
+        <View style={modalStyles.confirmOverlay}>
+          <View style={modalStyles.confirmBox}>
+            <MaterialCommunityIcons
+              name="alert-circle-outline"
+              size={30}
+              color={colors.danger}
+              style={{ alignSelf: "center" }}
+            />
+
+            <Text style={modalStyles.confirmTitle}>오류 발생</Text>
+
+            <Text style={modalStyles.confirmText}>{errorMessage}</Text>
+
+            <View style={modalStyles.confirmButtons}>
+              <Pressable
+                style={[
+                  modalStyles.confirmButton,
+                  modalStyles.confirmConfirmButton,
+                  { marginLeft: 0 },
+                ]}
+                onPress={() => setErrorModalVisible(false)}
+              >
+                <Text style={modalStyles.confirmConfirmText}>확인</Text>
+              </Pressable>
             </View>
           </View>
         </View>

@@ -1,8 +1,10 @@
-import { StyleSheet } from "react-native";
+import { Dimensions, StyleSheet } from "react-native";
 import { colors } from "../../constants/colors";
 import { radius } from "../../constants/radius";
 import { spacing } from "../../constants/spacing";
 import { typography } from "../../constants/typography";
+
+const { height } = Dimensions.get("window");
 
 export const menuStyles = StyleSheet.create({
   screen: {
@@ -645,6 +647,7 @@ export const guideListStyles = StyleSheet.create({
   },
 
   listContent: {
+    flexGrow: 1,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xs,
     paddingBottom: spacing.xxxxl,
@@ -709,10 +712,13 @@ export const guideListStyles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
 
+  emptyListContent: {
+    justifyContent: "center",
+  },
+
   emptyWrap: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: spacing.xxxxl,
   },
 
   emptyTitle: {
@@ -869,6 +875,7 @@ export const noticeListStyles = StyleSheet.create({
   },
 
   listContent: {
+    flexGrow: 1,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xs,
     paddingBottom: spacing.xxxxl,
@@ -980,7 +987,7 @@ export const noticeListStyles = StyleSheet.create({
   emptyWrap: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: spacing.xxxxl,
+    transform: [{ translateY: -height * 0.08 }],
   },
 
   emptyTitle: {
@@ -996,12 +1003,112 @@ export const noticeListStyles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
   },
+
+  paginationWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    paddingTop: 18,
+    paddingBottom: 30,
+  },
+
+  pageButton: {
+    minWidth: 70,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.primary,
+  },
+
+  pageButtonDisabled: {
+    backgroundColor: "#CBD5E1",
+  },
+
+  pageButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.white,
+  },
+
+  pageText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+
+  newText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: colors.primary,
+  },
+
+  emptyListContent: {
+    justifyContent: "center",
+  },
+
+  fixedPaginationArea: {
+    position: "absolute",
+    left: spacing.lg,
+    right: spacing.lg,
+    bottom: spacing.lg,
+    height: 64,
+    borderRadius: 24,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: "rgba(66, 165, 245, 0.14)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.md,
+  },
+
+  pageButtonTextDisabled: {
+    color: "#94A3B8",
+  },
+
+  pageIndicator: {
+    minWidth: 78,
+    height: 42,
+    paddingHorizontal: spacing.md,
+    borderRadius: 21,
+    backgroundColor: "#F8FAFC",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  pageCurrentText: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: colors.primaryDark,
+  },
+
+  pageSlashText: {
+    marginHorizontal: 4,
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#CBD5E1",
+  },
+
+  pageTotalText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: colors.textMuted,
+  },
 });
 
 export const noticeDetailStyles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+
+  loadingWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   headerArea: {

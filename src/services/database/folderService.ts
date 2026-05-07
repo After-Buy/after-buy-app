@@ -1,9 +1,9 @@
 import {
-  BreadcrumbItem,
-  Folder,
-  FolderContentResponse,
+    BreadcrumbItem,
+    Folder,
+    FolderContentResponse,
 } from "../../types/database";
-import { api } from "../api";
+import { api } from "../api/api";
 
 const normalizeFolder = (folder: any): Folder => {
   console.log("[FolderService] normalizeFolder raw:", folder);

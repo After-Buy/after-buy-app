@@ -24,7 +24,6 @@ export default function WarrantyAlertCard({
     <View style={homeStyles.sectionCard}>
       <View style={homeStyles.warrantyTop}>
         <View style={homeStyles.warrantyBadge}>
-          {/* <Text style={homeStyles.warrantyBadgeEmoji}>🛡️</Text> */}
           <MaterialCommunityIcons
             name="shield-check"
             size={30}

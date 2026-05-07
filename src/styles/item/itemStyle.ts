@@ -1169,4 +1169,33 @@ export const itemDetailStyle = StyleSheet.create({
     fontWeight: "700",
     color: colors.textPrimary,
   },
+
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+
+  sectionHeaderTitle: {
+    fontSize: typography.body,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+
+  ocrMiniButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: colors.primaryLight,
+  },
+
+  ocrMiniButtonText: {
+    fontSize: typography.caption,
+    fontWeight: "700",
+    color: colors.primaryDark,
+  },
 });
