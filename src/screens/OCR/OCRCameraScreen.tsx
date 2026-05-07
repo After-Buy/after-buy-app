@@ -273,7 +273,7 @@ export default function OCRCameraScreen({ navigation, route }: Props) {
           frameTopRatio={frameConfig.topRatio}
         />
       </View>
-      <View style={[styles.bottomArea, { bottom: insets.bottom }]}>
+      <View style={[styles.bottomArea, { bottom: insets.bottom + 10 }]}>
         <Pressable
           style={[
             styles.bottomIconButton,

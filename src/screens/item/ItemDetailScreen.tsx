@@ -2,6 +2,7 @@ import { typography } from "@/src/constants/typography";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import * as Clipboard from "expo-clipboard";
 import * as ImagePicker from "expo-image-picker";
 import React, {
   useEffect,
@@ -91,6 +92,9 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
   );
   const [modalValue, setModalValue] = useState("");
   const [imageActionVisible, setImageActionVisible] = useState(false);
+  const [imageActionMode, setImageActionMode] = useState<
+    "IMAGE" | "RECEIPT" | "SERIAL"
+  >("IMAGE");
   const [dateModalVisible, setDateModalVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [warrantyModalVisible, setWarrantyModalVisible] = useState(false);
@@ -108,6 +112,18 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
   const [noticeTitle, setNoticeTitle] = useState("");
   const [noticeMessage, setNoticeMessage] = useState("");
   const noticeActionRef = useRef<(() => void) | null>(null);
+
+  const handleCopyProductLink = async () => {
+    const link = draft?.product_link_url?.trim();
+
+    if (!link) {
+      openNotice("안내", "복사할 제품 정보 링크가 없습니다.");
+      return;
+    }
+
+    await Clipboard.setStringAsync(link);
+    openNotice("완료", "제품 정보 링크가 복사되었습니다.");
+  };
 
   const openNotice = (
     title: string,
@@ -208,6 +224,35 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
   useEffect(() => {
     console.log("[ItemDetail] route.params", route.params);
   }, []);
+
+  useEffect(() => {
+    const ocrResult =
+      "ocrResult" in route.params ? route.params.ocrResult : undefined;
+
+    if (!ocrResult) return;
+
+    setDraft((prev) => {
+      if (!prev) return prev;
+
+      if (ocrResult.ocrType === "RECEIPT") {
+        return {
+          ...prev,
+          purchase_date: ocrResult.purchase_date ?? prev.purchase_date,
+          purchase_price: ocrResult.purchase_price ?? prev.purchase_price,
+          purchase_store: ocrResult.purchase_store ?? prev.purchase_store,
+        };
+      }
+
+      if (ocrResult.ocrType === "SERIAL") {
+        return {
+          ...prev,
+          serial_number: ocrResult.serial_number ?? prev.serial_number,
+        };
+      }
+
+      return prev;
+    });
+  }, [route.params]);
 
   useLayoutEffect(() => {
     const parentTab = navigation.getParent();
@@ -790,6 +835,26 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
     });
   };
 
+  const openOCRActionSheet = (ocrType: "RECEIPT" | "SERIAL") => {
+    if (!isEditMode) return;
+
+    setImageActionMode(ocrType);
+    setImageActionVisible(true);
+  };
+
+  const goOCRCamera = (ocrType: "RECEIPT" | "SERIAL") => {
+    if (!isEditMode) return;
+
+    navigation.navigate("OCRCamera", {
+      ocrType,
+      sourceScreen: "ItemDetail",
+      itemDetailParams: {
+        ...route.params,
+        mode: "edit",
+      },
+    });
+  };
+
   const removeWarrantyDigit = () => {
     if (activeWarrantyUnit === "year") {
       setWarrantyYears((prev) => Math.floor(prev / 10));
@@ -1030,7 +1095,7 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
           styles.nearCenterCard,
           { height: 80, justifyContent: "center" },
         ]}
-        onPress={() => console.log("인근 서비스센터 조회")}
+        onPress={handleFindServiceCenter}
       >
         <View
           style={{
@@ -1134,7 +1199,10 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
 
         {isEditMode && (
           <TouchableOpacity
-            onPress={() => setImageActionVisible(true)}
+            onPress={() => {
+              setImageActionMode("IMAGE");
+              setImageActionVisible(true);
+            }}
             style={styles.cameraButton}
             activeOpacity={0.85}
           >
@@ -1153,20 +1221,113 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
       </View>
     );
   };
+
+  const requestOCRFromImage = async (
+    ocrType: "RECEIPT" | "SERIAL",
+    imageBase64: string,
+  ) => {
+    try {
+      setIsUploadingImage(true);
+
+      const response = await deviceService.requestOCR({
+        ocr_type: ocrType,
+        image_base64: imageBase64,
+      });
+
+      if (
+        !response.success ||
+        !response.data.is_success ||
+        !response.data.result
+      ) {
+        openNotice(
+          "안내",
+          response.data.message ??
+            "텍스트를 인식하지 못했습니다. 다시 시도해주세요.",
+        );
+        return;
+      }
+
+      const result = response.data.result;
+
+      if (ocrType === "RECEIPT") {
+        setDraft((prev) => {
+          if (!prev) return prev;
+
+          return {
+            ...prev,
+            purchase_date: result.purchase_date ?? prev.purchase_date,
+            purchase_price:
+              result.purchase_price !== undefined
+                ? String(result.purchase_price)
+                : prev.purchase_price,
+            purchase_store: result.purchase_store ?? prev.purchase_store,
+          };
+        });
+
+        openNotice("완료", "구매 정보가 자동 입력되었습니다.");
+        return;
+      }
+
+      if (ocrType === "SERIAL") {
+        if (!result.serial_number) {
+          openNotice("안내", "시리얼 번호를 인식하지 못했습니다.");
+          return;
+        }
+
+        updateField("serial_number", result.serial_number);
+        openNotice("완료", "시리얼 번호가 자동 입력되었습니다.");
+      }
+    } catch (error) {
+      console.log("[ItemDetail OCR] 실패", error);
+      openNotice("오류", "OCR 처리 중 문제가 발생했습니다.");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   const handlePickFromGallery = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       quality: 0.8,
+      base64: imageActionMode !== "IMAGE",
     });
 
     if (result.canceled) return;
 
     const asset = result.assets[0];
 
-    updateField("image_url", asset.uri);
+    if (imageActionMode === "IMAGE") {
+      updateField("image_url", asset.uri);
+      setImageActionVisible(false);
+      return;
+    }
+
+    if (!asset.base64) {
+      setImageActionVisible(false);
+      openNotice("오류", "이미지 데이터를 읽지 못했습니다.");
+      return;
+    }
+
+    await requestOCRFromImage(imageActionMode, asset.base64);
     setImageActionVisible(false);
   };
+
   const handleTakePhoto = async () => {
+    if (imageActionMode !== "IMAGE") {
+      setImageActionVisible(false);
+
+      navigation.navigate("OCRCamera", {
+        ocrType: imageActionMode,
+        sourceScreen: "ItemDetail",
+        itemDetailParams: {
+          ...route.params,
+          mode: "edit",
+        },
+      });
+
+      return;
+    }
+
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ["images"],
       quality: 0.8,
@@ -1178,6 +1339,23 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
 
     updateField("image_url", asset.uri);
     setImageActionVisible(false);
+  };
+
+  const handleFindServiceCenter = () => {
+    const brand = draft?.brand?.trim();
+
+    if (!brand) {
+      openNotice(
+        "안내",
+        "브랜드 정보가 없어 서비스 센터를 검색할 수 없습니다.",
+      );
+      return;
+    }
+
+    navigation.navigate("ServiceCenterMap", {
+      brand,
+      productName: draft?.product_name,
+    });
   };
 
   if (isLoading || !draft) {
@@ -1239,15 +1417,117 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
           {renderWarrantyFieldCompact()}
         </View>
 
-        <View style={styles.infoGroupCard}>{renderPurchaseInfoCard()}</View>
+        <View style={styles.infoGroupCard}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionHeaderTitle}>구매 정보</Text>
+
+            {isEditMode && (
+              <TouchableOpacity
+                style={styles.ocrMiniButton}
+                activeOpacity={0.85}
+                onPress={() => openOCRActionSheet("RECEIPT")}
+              >
+                <MaterialCommunityIcons
+                  name="text-recognition"
+                  size={16}
+                  color={colors.primaryDark}
+                />
+                <Text style={styles.ocrMiniButtonText}>OCR</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {renderPurchaseInfoCard()}
+        </View>
 
         <View style={styles.infoGroupCard}>
-          {renderCompactField("product_link_url", draft.product_link_url, {
-            placeholder: "링크를 입력하세요",
-          })}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 6,
+            }}
+          >
+            <Text style={styles.compactLabel}>제품 정보 링크</Text>
+
+            <TouchableOpacity
+              onPress={handleCopyProductLink}
+              activeOpacity={0.85}
+              style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+            >
+              <MaterialCommunityIcons
+                name="content-copy"
+                size={14}
+                color={colors.primaryDark}
+              />
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: colors.primaryDark,
+                  fontWeight: "500",
+                }}
+              >
+                복사
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {isEditMode ? (
+            <Pressable
+              onPress={() => openFieldModal("product_link_url")}
+              style={styles.compactValueBox}
+            >
+              <Text
+                style={[
+                  styles.compactValueText,
+                  !draft.product_link_url && styles.placeholderText,
+                ]}
+                numberOfLines={1}
+              >
+                {draft.product_link_url || "링크를 입력하세요"}
+              </Text>
+            </Pressable>
+          ) : (
+            <View style={styles.compactReadonlyBox}>
+              <Text
+                style={[
+                  styles.compactValueText,
+                  !draft.product_link_url && styles.placeholderText,
+                ]}
+                numberOfLines={1}
+              >
+                {draft.product_link_url || "링크를 입력하세요"}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.infoGroupCard}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionHeaderTitle}>시리얼 넘버</Text>
+
+            {isEditMode && (
+              <TouchableOpacity
+                style={styles.ocrMiniButton}
+                activeOpacity={0.85}
+                onPress={() => openOCRActionSheet("SERIAL")}
+              >
+                <MaterialCommunityIcons
+                  name="text-recognition"
+                  size={16}
+                  color={colors.primaryDark}
+                />
+                <Text style={styles.ocrMiniButtonText}>OCR</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           {renderCompactField("serial_number", draft.serial_number, {
             placeholder: "시리얼 번호를 입력하세요",
           })}
+        </View>
+
+        <View style={styles.infoGroupCard}>
           {renderCompactField("memo", draft.memo, {
             placeholder: "메모를 입력하세요",
             multiline: true,
@@ -1392,9 +1672,20 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
           <View style={modalStyles.profileImageSheet}>
             <View style={modalStyles.sheetHandle} />
 
-            <Text style={modalStyles.sheetTitle}>아이템 이미지 변경</Text>
+            <Text style={modalStyles.sheetTitle}>
+              {imageActionMode === "IMAGE"
+                ? "아이템 이미지 변경"
+                : imageActionMode === "RECEIPT"
+                  ? "구매 정보 OCR"
+                  : "시리얼 넘버 OCR"}
+            </Text>
+
             <Text style={modalStyles.sheetDescription}>
-              갤러리에서 이미지를 선택하거나 직접 촬영할 수 있어요.
+              {imageActionMode === "IMAGE"
+                ? "갤러리에서 이미지를 선택하거나 직접 촬영할 수 있어요."
+                : imageActionMode === "RECEIPT"
+                  ? "영수증 사진을 선택하거나 컷 오버레이에 맞춰 직접 촬영해주세요."
+                  : "시리얼 넘버가 적힌 제품 라벨 사진을 선택하거나 직접 촬영해주세요."}
             </Text>
 
             <Pressable
@@ -1432,7 +1723,9 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
               <View style={modalStyles.sheetActionTextWrap}>
                 <Text style={modalStyles.sheetActionTitle}>직접 촬영</Text>
                 <Text style={modalStyles.sheetActionSubtitle}>
-                  카메라로 새 프로필 사진을 촬영합니다
+                  {imageActionMode === "IMAGE"
+                    ? "카메라로 새 제품 사진을 촬영합니다"
+                    : "카메라 화면에서 인식 영역에 맞춰 촬영합니다"}
                 </Text>
               </View>
             </Pressable>

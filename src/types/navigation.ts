@@ -48,6 +48,11 @@ export type RootStackParamList = {
       }
     | undefined;
 
+  ServiceCenterMap: {
+    brand: string;
+    productName?: string;
+  };
+
   OCRCamera: {
     ocrType: OCRType;
     sourceScreen: "ItemRegisterModel" | "ItemDetail";
@@ -110,5 +115,25 @@ export type LoginScreenProps = NativeStackScreenProps<
   AuthStackParamList,
   "Login"
 >;
+
+export type NoticeCategoryApi = "ALL" | "NOTICE" | "MAINTENANCE" | "UPDATE";
+export type NoticeCategoryLabel = "전체" | "안내" | "점검" | "업데이트";
+
+export type NoticeListItem = {
+  noticeId: number;
+  title: string;
+  category: NoticeCategoryLabel;
+  categoryApi: Exclude<NoticeCategoryApi, "ALL">;
+  isPinned: boolean;
+  isNew: boolean;
+  isRead: boolean;
+  createdAt: string;
+};
+
+export type NoticeDetail = NoticeListItem & {
+  content: string;
+  createdBy: number;
+  updatedAt: string;
+};
 
 export type HomeScreenProps = BottomTabScreenProps<MainTabParamList, "홈">;

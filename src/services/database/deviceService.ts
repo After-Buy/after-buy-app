@@ -1,5 +1,5 @@
 import { OCRType } from "@/src/types/navigation";
-import { api } from "../api";
+import { api } from "../api/api";
 
 export type OCRRequest = {
   ocr_type: OCRType;

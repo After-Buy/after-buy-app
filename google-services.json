@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "335386672587",
+    "project_id": "after-buy-1558d",
+    "storage_bucket": "after-buy-1558d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:335386672587:android:0751c5aaf34e9b47720a4e",
+        "android_client_info": {
+          "package_name": "com.jinu743.afterbuy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAtOy_7NByWIeK_OfVU1rRr7OaUSD4MhXk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

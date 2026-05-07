@@ -1,42 +1,59 @@
 import { colors } from "@/src/constants/colors";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import React, { useMemo } from "react";
-import { FlatList, Text, TouchableOpacity, View } from "react-native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import React, { useCallback, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import AppHeader from "../../components/common/AppHeader";
-import { guideListStyles } from "../../styles/menu/menuStyle";
-
-const MOCK_GUIDES = [
-  {
-    guideId: 1,
-    title: "제품 스캔 방법",
-    content:
-      "앱 메인 화면에서 전자기기 등록 버튼을 눌러 영수증이나 제품 정보를 촬영하면 OCR 기능을 통해 모델명, 구매일 등의 정보가 자동으로 입력됩니다.\n\n자동 입력이 어려운 경우 직접 입력하여 등록할 수도 있습니다.",
-    createdAt: "2026-02-26",
-  },
-  {
-    guideId: 2,
-    title: "보증 기간 알림 해제",
-    content: "알림 설정 화면에서 해제할 수 있습니다.",
-    createdAt: "2026-02-26",
-  },
-  {
-    guideId: 3,
-    title: "제품 및 폴더 위치 변경",
-    content: "선택 모드에서 이동 기능으로 변경할 수 있습니다.",
-    createdAt: "2026-02-26",
-  },
-  {
-    guideId: 4,
-    title: "제품 검색 방법",
-    content: "모델명 또는 제품명으로 검색할 수 있습니다.",
-    createdAt: "2026-02-26",
-  },
-];
+import { FaqListItem, getFaqList } from "../../services/api/faqApi";
+import { guideListStyles, noticeListStyles } from "../../styles/menu/menuStyle";
 
 export default function GuideListScreen() {
   const navigation = useNavigation<any>();
-  const data = useMemo(() => MOCK_GUIDES, []);
+
+  const [data, setData] = useState<FaqListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalCount: 0,
+    size: 10,
+  });
+
+  const fetchFaqs = async () => {
+    try {
+      setLoading(true);
+
+      const result = await getFaqList({
+        page,
+        size: 10,
+      });
+
+      setData(result.faqs);
+      setPagination(result.pagination);
+    } catch (error: any) {
+      console.log("[FAQ LIST ERROR]", error);
+      console.log("[FAQ LIST ERROR STATUS]", error.response?.status);
+      console.log("[FAQ LIST ERROR DATA]", error.response?.data);
+      console.log("[FAQ LIST ERROR URL]", error.config?.url);
+      console.log("[FAQ LIST ERROR METHOD]", error.config?.method);
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchFaqs();
+    }, [page]),
+  );
 
   return (
     <View style={guideListStyles.screen}>
@@ -48,59 +65,119 @@ export default function GuideListScreen() {
         서비스 이용 중 자주 찾는 기능과 사용 방법을 확인해보세요.
       </Text>
 
-      <FlatList
-        data={data}
-        keyExtractor={(item) => String(item.guideId)}
-        contentContainerStyle={guideListStyles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={guideListStyles.emptyWrap}>
-            <Text style={guideListStyles.emptyTitle}>이용 안내가 없습니다</Text>
-            <Text style={guideListStyles.emptyDescription}>
-              현재 표시할 수 있는 이용 안내 항목이 없어요.
-            </Text>
-          </View>
-        }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            activeOpacity={0.88}
-            style={guideListStyles.guideCard}
-            onPress={() =>
-              navigation.navigate("GuideDetail", {
-                guide: item,
-              })
-            }
-          >
-            <View style={guideListStyles.iconWrap}>
-              <MaterialCommunityIcons
-                name="book-open-page-variant-outline"
-                size={22}
-                color={colors.primaryDark}
-              />
-            </View>
-
-            <View style={guideListStyles.textArea}>
-              <Text style={guideListStyles.title} numberOfLines={2}>
-                {item.title}
+      {loading ? (
+        <View style={guideListStyles.emptyWrap}>
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text style={guideListStyles.emptyDescription}>
+            이용 안내를 불러오는 중입니다.
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={data}
+          keyExtractor={(item) => String(item.faqId)}
+          contentContainerStyle={[
+            guideListStyles.listContent,
+            data.length === 0 && guideListStyles.emptyListContent,
+          ]}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={guideListStyles.emptyWrap}>
+              <Text style={guideListStyles.emptyTitle}>
+                이용 안내가 없습니다
               </Text>
-
-              <Text style={guideListStyles.preview} numberOfLines={2}>
-                {item.content}
+              <Text style={guideListStyles.emptyDescription}>
+                현재 표시할 수 있는 이용 안내 항목이 없어요.
               </Text>
-
-              <Text style={guideListStyles.date}>{item.createdAt}</Text>
             </View>
+          }
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              activeOpacity={0.88}
+              style={guideListStyles.guideCard}
+              onPress={() =>
+                navigation.navigate("GuideDetail", {
+                  faqId: item.faqId,
+                })
+              }
+            >
+              <View style={guideListStyles.iconWrap}>
+                <MaterialCommunityIcons
+                  name="book-open-page-variant-outline"
+                  size={22}
+                  color={colors.primaryDark}
+                />
+              </View>
 
-            <View style={guideListStyles.arrowWrap}>
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={20}
-                color={colors.textMuted}
-              />
-            </View>
-          </TouchableOpacity>
-        )}
-      />
+              <View style={guideListStyles.textArea}>
+                <Text style={guideListStyles.title} numberOfLines={2}>
+                  {item.title}
+                </Text>
+
+                <Text style={guideListStyles.preview} numberOfLines={2}>
+                  자세한 이용 방법을 확인해보세요.
+                </Text>
+
+                <Text style={guideListStyles.date}>{item.createdAt}</Text>
+              </View>
+
+              <View style={guideListStyles.arrowWrap}>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={20}
+                  color={colors.textMuted}
+                />
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+      )}
+      <View style={noticeListStyles.fixedPaginationArea}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          disabled={page <= 1}
+          style={[
+            noticeListStyles.pageButton,
+            page <= 1 && noticeListStyles.pageButtonDisabled,
+          ]}
+          onPress={() => setPage((prev) => Math.max(prev - 1, 1))}
+        >
+          <MaterialCommunityIcons
+            name="chevron-left"
+            size={20}
+            color={page <= 1 ? "#94A3B8" : colors.white}
+          />
+        </TouchableOpacity>
+
+        <View style={noticeListStyles.pageIndicator}>
+          <Text style={noticeListStyles.pageCurrentText}>{page}</Text>
+          <Text style={noticeListStyles.pageSlashText}>/</Text>
+          <Text style={noticeListStyles.pageTotalText}>
+            {Math.max(pagination.totalPages, 1)}
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          activeOpacity={0.8}
+          disabled={page >= pagination.totalPages}
+          style={[
+            noticeListStyles.pageButton,
+            page >= pagination.totalPages &&
+              noticeListStyles.pageButtonDisabled,
+          ]}
+          onPress={() =>
+            setPage((prev) =>
+              Math.min(prev + 1, Math.max(pagination.totalPages, 1)),
+            )
+          }
+        >
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={20}
+            color={page >= pagination.totalPages ? "#94A3B8" : colors.white}
+          />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

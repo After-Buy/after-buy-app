@@ -1,11 +1,13 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import * as Notifications from "expo-notifications";
 import React, { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   Image,
+  Linking,
   Platform,
   Pressable,
   RefreshControl,
@@ -15,12 +17,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { authApi } from "../../services/api/authapi";
 
 import Swipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 
 import AppHeader from "../../components/common/AppHeader";
 import { colors } from "../../constants/colors";
-import { authService } from "../../services/database/authService";
 import { notificationService } from "../../services/database/notificationService";
 import { notificationStyle as styles } from "../../styles/notification/notificationStyle";
 import { NotificationItem } from "../../types/notification";
@@ -59,8 +61,11 @@ export default function NotificationScreen({ onUnreadChanged }: Props) {
         notificationService.getPushSettings(),
       ]);
 
+      console.log("[NOTIFICATION ROWS]", notificationRows);
+      console.log("[PUSH SETTINGS]", pushSettings);
+
       setNotifications(notificationRows);
-      setPushEnabled(pushSettings?.push_enabled === 1);
+      setPushEnabled(pushSettings?.pushEnabled === 1);
     } catch (error) {
       setIsError(true);
     } finally {
@@ -71,7 +76,9 @@ export default function NotificationScreen({ onUnreadChanged }: Props) {
 
   useFocusEffect(
     useCallback(() => {
+      console.log("[NOTIFICATION SCREEN FOCUS]");
       loadData();
+      syncFcmToken();
     }, []),
   );
 
@@ -109,21 +116,89 @@ export default function NotificationScreen({ onUnreadChanged }: Props) {
     await loadData();
   };
 
+  const syncFcmToken = async () => {
+    try {
+      console.log("[FCM TOKEN SYNC] start");
+
+      const hasPermission = await requestNotificationPermission();
+
+      console.log("[FCM TOKEN SYNC] permission:", hasPermission);
+
+      if (!hasPermission) return;
+
+      const token = await Notifications.getDevicePushTokenAsync();
+
+      console.log("[FCM TOKEN]", token.data);
+
+      await notificationService.updateFcmToken(String(token.data));
+
+      console.log("[FCM TOKEN SYNC] success");
+    } catch (error: any) {
+      console.log("[FCM TOKEN SYNC ERROR]", {
+        status: error?.response?.status,
+        data: error?.response?.data,
+        method: error?.config?.method,
+        baseURL: error?.config?.baseURL,
+        url: error?.config?.url,
+        fullUrl: `${error?.config?.baseURL ?? ""}${error?.config?.url ?? ""}`,
+        body: error?.config?.data,
+      });
+    }
+  };
+
+  const requestNotificationPermission = async () => {
+    const current = await Notifications.getPermissionsAsync();
+
+    if (current.status === "granted") return true;
+
+    const requested = await Notifications.requestPermissionsAsync();
+
+    if (requested.status === "granted") return true;
+
+    Alert.alert(
+      "알림 권한이 꺼져 있습니다",
+      "전체 알림을 켜려면 휴대폰 설정에서 알림 권한을 허용해야 합니다.",
+      [
+        { text: "취소", style: "cancel" },
+        { text: "설정 열기", onPress: () => Linking.openSettings() },
+      ],
+    );
+
+    return false;
+  };
+
   const handleTogglePush = async () => {
     if (isToggleLoading) return;
 
     const previous = pushEnabled;
     const next = !previous;
 
+    if (next) {
+      const hasPermission = await requestNotificationPermission();
+
+      if (!hasPermission) {
+        setPushEnabled(previous);
+        return;
+      }
+    }
+
     setPushEnabled(next);
     setIsToggleLoading(true);
 
     try {
-      await authService.patchMyPushEnabled(next ? 1 : 0);
+      await authApi.patchMyPushEnabled(next ? 1 : 0);
       showToast(`전체 알림이 ${next ? "활성화" : "비활성화"}되었습니다`);
-    } catch (error) {
+    } catch (error: any) {
+      console.log("[PUSH TOGGLE ERROR]", {
+        status: error?.response?.status,
+        data: error?.response?.data,
+        url: error?.config?.url,
+        method: error?.config?.method,
+        body: error?.config?.data,
+      });
+
       setPushEnabled(previous);
-      showToast("설정 변경에 실패했습니다");
+      showToast("서버 알림 동기화에 실패했습니다");
     } finally {
       setIsToggleLoading(false);
     }
