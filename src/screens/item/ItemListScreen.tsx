@@ -98,6 +98,8 @@ export default function ItemListScreen() {
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const loadedFolderRef = useRef<string | null>(null);
+
   const showToast = (msg: string) => {
     setToast({ visible: true, message: msg });
 
@@ -189,9 +191,17 @@ export default function ItemListScreen() {
   };
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", loadData);
+    const unsubscribe = navigation.addListener("focus", () => {
+      const currentFolderKey = folderId === null ? "root" : String(folderId);
+
+      if (loadedFolderRef.current === currentFolderKey) return;
+
+      loadedFolderRef.current = currentFolderKey;
+      loadData();
+    });
+
     return unsubscribe;
-  }, [folderId]);
+  }, [navigation, folderId]);
 
   useEffect(() => {
     setSelectionMode(initialSelectionMode);
@@ -920,6 +930,11 @@ export default function ItemListScreen() {
             : `folder-${item.folder_id}`
         }
         renderItem={renderItem}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews
+        updateCellsBatchingPeriod={50}
         contentContainerStyle={[
           styles.listContent,
           displayData.length === 0 && styles.emptyContainer,
@@ -1006,7 +1021,13 @@ export default function ItemListScreen() {
             onPress={() => setMenuVisible(false)}
           />
 
-          <View style={[styles.menuCard, styles.headerMenuCard]}>
+          <View
+            style={[
+              styles.menuCard,
+              styles.headerMenuCard,
+              { top: insets.top },
+            ]}
+          >
             <TouchableOpacity
               style={styles.menuItemButton}
               onPress={() => {

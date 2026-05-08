@@ -3,8 +3,11 @@ import { authApi } from "@/src/services/api/authapi";
 import { modalStyles } from "@/src/styles/modalStyle";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import React, { useCallback, useState } from "react";
+import {
+  useFocusEffect,
+  useNavigation
+} from "@react-navigation/native";
+import React, { useCallback, useRef, useState } from "react";
 import {
   Image,
   Modal,
@@ -71,6 +74,8 @@ export default function MenuScreen() {
   );
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const hasLoadedRef = useRef(false);
+
   const [profile, setProfile] = useState({
     nickname: "",
     email: "",
@@ -112,7 +117,22 @@ export default function MenuScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadMenuData();
+      const checkProfileUpdated = async () => {
+        const updated = await AsyncStorage.getItem("profileUpdated");
+
+        if (updated === "1") {
+          await AsyncStorage.removeItem("profileUpdated");
+          await loadMenuData();
+          return;
+        }
+
+        if (hasLoadedRef.current) return;
+
+        hasLoadedRef.current = true;
+        await loadMenuData();
+      };
+
+      checkProfileUpdated();
     }, [loadMenuData]),
   );
 

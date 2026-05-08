@@ -174,6 +174,7 @@ export default function NoticeListScreen() {
         keyExtractor={(item) => String(item.noticeId)}
         contentContainerStyle={[
           noticeListStyles.listContent,
+          noticeListStyles.listContentWithPagination,
           listData.length === 0 && noticeListStyles.emptyListContent,
         ]}
         ListEmptyComponent={

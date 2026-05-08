@@ -16,7 +16,7 @@ export const notificationStyle = StyleSheet.create({
   },
 
   headerArea: {
-    paddingTop: spacing.xxl,
+    paddingTop: spacing.xxxl,
     backgroundColor: colors.background,
   },
 
@@ -240,10 +240,11 @@ export const notificationStyle = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 4,
   },
 
   headerToggleLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
     color: colors.textSecondary,
     marginBottom: 0,

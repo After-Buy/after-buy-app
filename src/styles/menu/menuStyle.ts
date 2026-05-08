@@ -637,6 +637,10 @@ export const guideListStyles = StyleSheet.create({
     paddingBottom: spacing.sm,
   },
 
+  listContentWithPagination: {
+    paddingBottom: 120,
+  },
+
   helperText: {
     marginTop: spacing.md,
     marginBottom: spacing.md,
@@ -826,6 +830,10 @@ export const noticeListStyles = StyleSheet.create({
   headerArea: {
     paddingTop: spacing.xxxl,
     paddingBottom: spacing.sm,
+  },
+
+  listContentWithPagination: {
+    paddingBottom: 120,
   },
 
   categoryWrap: {

@@ -6,6 +6,7 @@ import { typography } from "../constants/typography";
 
 export const headerStyles = StyleSheet.create({
   headerContainer: {
+    height: 64,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: spacing.lg,
@@ -13,19 +14,19 @@ export const headerStyles = StyleSheet.create({
   },
 
   leftSection: {
-    flex: 1,
+    width: 96,
     alignItems: "flex-start",
     justifyContent: "center",
   },
 
   titleSection: {
-    flex: 4,
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
 
   rightSection: {
-    flex: 1,
+    width: 96,
     alignItems: "flex-end",
     justifyContent: "center",
   },
