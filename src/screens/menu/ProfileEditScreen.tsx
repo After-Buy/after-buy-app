@@ -1,8 +1,9 @@
 import { authApi } from "@/src/services/api/authapi";
 import { modalStyles } from "@/src/styles/modalStyle";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
-import { useNavigation } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Image,
@@ -78,6 +79,10 @@ export default function ProfileEditScreen() {
     load();
   }, []);
 
+  const notifyMenuProfileChanged = async () => {
+    await AsyncStorage.setItem("profileUpdated", "1");
+  };
+
   const handleEditImage = () => {
     setImageActionVisible(true);
   };
@@ -151,6 +156,7 @@ export default function ProfileEditScreen() {
 
       setProfileImageUri(image_url);
       setImageActionVisible(false);
+      await notifyMenuProfileChanged();
     } catch (error: any) {
       console.log(
         "[PROFILE_IMAGE_UPLOAD_ERROR_STATUS]",
@@ -227,6 +233,7 @@ export default function ProfileEditScreen() {
 
       setProfileImageUri(image_url);
       setImageActionVisible(false);
+      await notifyMenuProfileChanged();
     } catch (error: any) {
       console.log(
         "[PROFILE_IMAGE_UPLOAD_ERROR_STATUS]",
@@ -261,6 +268,7 @@ export default function ProfileEditScreen() {
 
       setNicknameModalVisible(false);
       setNicknameError("");
+      await notifyMenuProfileChanged();
     } catch (error) {
       showErrorModal("닉네임 수정 중 문제가 발생했습니다.");
     } finally {

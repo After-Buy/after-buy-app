@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -32,6 +33,7 @@ export default function OCRCameraScreen({ navigation, route }: Props) {
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [enableTorch, setEnableTorch] = useState(false);
+  const [capturedImageUri, setCapturedImageUri] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
 
   useLayoutEffect(() => {
@@ -138,6 +140,8 @@ export default function OCRCameraScreen({ navigation, route }: Props) {
         return;
       }
 
+      setCapturedImageUri(photo.uri);
+
       const imageBase64 = await cropOverlayToBase64(photo.uri);
 
       if (!imageBase64) {
@@ -216,6 +220,7 @@ export default function OCRCameraScreen({ navigation, route }: Props) {
       Alert.alert("오류", "촬영 또는 OCR 처리 중 문제가 발생했습니다.");
     } finally {
       setIsSubmitting(false);
+      setCapturedImageUri(null);
     }
   };
 
@@ -239,13 +244,21 @@ export default function OCRCameraScreen({ navigation, route }: Props) {
 
   return (
     <View style={styles.container}>
-      <CameraView
-        ref={cameraRef}
-        style={StyleSheet.absoluteFill}
-        facing="back"
-        enableTorch={enableTorch}
-        onCameraReady={() => setIsCameraReady(true)}
-      />
+      {capturedImageUri ? (
+        <Image
+          source={{ uri: capturedImageUri }}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+        />
+      ) : (
+        <CameraView
+          ref={cameraRef}
+          style={StyleSheet.absoluteFill}
+          facing="back"
+          enableTorch={enableTorch}
+          onCameraReady={() => setIsCameraReady(true)}
+        />
+      )}
 
       <View style={{ paddingTop: insets.top, backgroundColor: "white" }}>
         <AppHeader

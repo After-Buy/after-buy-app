@@ -1,7 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import * as Notifications from "expo-notifications";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -78,9 +78,12 @@ export default function NotificationScreen({ onUnreadChanged }: Props) {
     useCallback(() => {
       console.log("[NOTIFICATION SCREEN FOCUS]");
       loadData();
-      syncFcmToken();
     }, []),
   );
+
+  useEffect(() => {
+    syncFcmToken();
+  }, []);
 
   useFocusEffect(
     useCallback(() => {

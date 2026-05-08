@@ -1,6 +1,7 @@
 import { NavigationContainer } from "@react-navigation/native";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
+import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -16,7 +17,6 @@ export default function App() {
       screens: {
         Main: "main",
         ItemDetail: "item/:deviceId",
-        // 공지 상세 화면 만들면 여기에 추가
         AnnouncementDetail: "announcements/:announcementId",
       },
     },
@@ -57,12 +57,14 @@ export default function App() {
   if (!dbInitialized) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <StatusBar style="dark" backgroundColor="#FFFFFF" />
         <ActivityIndicator size="large" color="#4D86E8" />
       </View>
     );
   }
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <StatusBar style="dark" backgroundColor="#FFFFFF" />
       <NavigationContainer linking={linking}>
         <RootNavigator />
       </NavigationContainer>

@@ -1288,8 +1288,9 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
   const handlePickFromGallery = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
+      allowsEditing: true,
       quality: 0.8,
-      base64: imageActionMode !== "IMAGE",
+      base64: true,
     });
 
     if (result.canceled) return;

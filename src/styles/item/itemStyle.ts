@@ -6,7 +6,7 @@ import { typography } from "../../constants/typography";
 
 export const itemListStyle = StyleSheet.create({
   headerArea: {
-    paddingTop: spacing.xxl,
+    paddingTop: spacing.xxxl,
   },
 
   menuBackdrop: {

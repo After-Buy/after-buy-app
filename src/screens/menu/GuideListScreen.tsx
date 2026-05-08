@@ -78,6 +78,7 @@ export default function GuideListScreen() {
           keyExtractor={(item) => String(item.faqId)}
           contentContainerStyle={[
             guideListStyles.listContent,
+            guideListStyles.listContentWithPagination,
             data.length === 0 && guideListStyles.emptyListContent,
           ]}
           showsVerticalScrollIndicator={false}

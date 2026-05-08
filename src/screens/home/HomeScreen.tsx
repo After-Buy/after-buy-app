@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import * as Clipboard from "expo-clipboard";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Modal,
   RefreshControl,
@@ -38,6 +38,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [noticeTitle, setNoticeTitle] = useState("");
   const [noticeMessage, setNoticeMessage] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const hasLoadedRef = useRef(false);
 
   const onRefresh = async () => {
     try {
@@ -124,15 +125,24 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   };
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", loadHomeData);
+    const unsubscribe = navigation.addListener("focus", () => {
+      if (hasLoadedRef.current) return;
+
+      hasLoadedRef.current = true;
+      loadHomeData();
+    });
+
     return unsubscribe;
   }, [navigation]);
 
   if (status === "error") {
     return (
       <View style={homeStyles.screen}>
-        <View style={homeStyles.scrollContent}>
-          <Text style={homeStyles.headerTitle}>홈</Text>
+        <View style={homeStyles.headerArea}>
+          <AppHeader title="홈" leftType="none" rightType="none" />
+        </View>
+
+        <View style={homeStyles.errorWrap}>
           <ErrorState
             title="정보를 불러오지 못했습니다"
             buttonText="다시 시도"
