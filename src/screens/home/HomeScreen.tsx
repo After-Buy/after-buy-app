@@ -1,7 +1,8 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
-import * as Clipboard from "expo-clipboard";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Linking,
   Modal,
   RefreshControl,
   ScrollView,
@@ -110,26 +111,46 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     }
   };
 
-  const handleCopyProductLink = async () => {
-    console.log("[HOME WARRANTY ALERT]", homeData.warrantyAlert);
+  const handleOpenProductLink = async () => {
+    try {
+      console.log("[HOME WARRANTY ALERT]", homeData.warrantyAlert);
 
-    const link = homeData.warrantyAlert?.productLink?.trim();
+      const link = homeData.warrantyAlert?.productLink?.trim();
 
-    if (!link) {
-      openNotice("안내", "복사할 제품 정보 링크가 없습니다.");
-      return;
+      if (!link) {
+        openNotice("안내", "제품 정보 링크가 없습니다.");
+        return;
+      }
+
+      const safeLink = link.startsWith("http") ? link : `https://${link}`;
+
+      console.log("[OPEN PRODUCT LINK]", safeLink);
+
+      await Linking.openURL(safeLink);
+    } catch (error) {
+      console.log("[OPEN_PRODUCT_LINK_ERROR]", error);
+      openNotice("안내", "제품 정보 페이지를 열지 못했습니다.");
     }
-
-    await Clipboard.setStringAsync(link);
-    openNotice("완료", "제품 정보 링크가 복사되었습니다.");
   };
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
-      if (hasLoadedRef.current) return;
+      const checkHomeUpdated = async () => {
+        const updated = await AsyncStorage.getItem("homeUpdated");
 
-      hasLoadedRef.current = true;
-      loadHomeData();
+        if (updated === "1") {
+          await AsyncStorage.removeItem("homeUpdated");
+          await loadHomeData();
+          return;
+        }
+
+        if (hasLoadedRef.current) return;
+
+        hasLoadedRef.current = true;
+        await loadHomeData();
+      };
+
+      checkHomeUpdated();
     });
 
     return unsubscribe;
@@ -192,7 +213,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
         <WarrantyAlertCard
           item={homeData.warrantyAlert}
-          onPressProductLink={handleCopyProductLink}
+          onPressProductLink={handleOpenProductLink}
           onPressServiceCenter={handlePressWarrantyServiceCenter}
           onPressItem={(id) => {
             rootNavigation.navigate("ItemDetail", {

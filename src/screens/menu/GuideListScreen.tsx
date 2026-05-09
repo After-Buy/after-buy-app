@@ -5,6 +5,7 @@ import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  RefreshControl,
   Text,
   TouchableOpacity,
   View,
@@ -18,6 +19,7 @@ export default function GuideListScreen() {
 
   const [data, setData] = useState<FaqListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -49,6 +51,21 @@ export default function GuideListScreen() {
     }
   };
 
+  const onRefresh = async () => {
+    try {
+      setRefreshing(true);
+
+      if (page !== 1) {
+        setPage(1);
+        return;
+      }
+
+      await fetchFaqs();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchFaqs();
@@ -75,6 +92,9 @@ export default function GuideListScreen() {
       ) : (
         <FlatList
           data={data}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
           keyExtractor={(item) => String(item.faqId)}
           contentContainerStyle={[
             guideListStyles.listContent,

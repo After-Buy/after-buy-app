@@ -10,10 +10,28 @@ type ApiResponse<T> = {
 export const notificationService = {
   async getNotifications(): Promise<NotificationItem[]> {
     const res = await api.get<
-      ApiResponse<{ notifications: NotificationItem[] }>
+      ApiResponse<{
+        notifications: any[];
+        totalCount: number;
+      }>
     >("/notifications/home");
 
-    return res.data.data.notifications ?? [];
+    const rows = res.data.data.notifications ?? [];
+
+    return rows.map((item) => ({
+      notification_id: item.notificationId,
+      device_id: item.deviceId,
+      device_name: item.deviceName,
+      device_image_url: item.deviceImageUrl,
+      notification_type: item.notificationType,
+      is_read: item.isRead,
+      warranty_expiry_date: item.warrantyExpiryDate,
+
+      // 직접 계산
+      days_remaining: this.getDaysRemaining(item.warrantyExpiryDate),
+
+      sent_at: item.sentAt,
+    }));
   },
 
   async getPushSettings(): Promise<PushSettings> {
@@ -47,11 +65,9 @@ export const notificationService = {
   },
 
   async deleteNotification(notificationId: number) {
-    const res = await api.delete<ApiResponse<null>>(
-      `/notifications/${notificationId}`,
-    );
+    await api.delete(`/notifications/${notificationId}`);
 
-    return res.data;
+    return true;
   },
 
   getDaysRemaining(warrantyExpiryDate: string) {

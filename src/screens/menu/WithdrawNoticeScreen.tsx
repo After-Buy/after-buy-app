@@ -1,5 +1,6 @@
 import { runUnauthorizedHandler } from "@/src/services/api/api";
 import { authApi } from "@/src/services/api/authapi";
+import { clearAllAuthData } from "@/src/utils/authStorage";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useNavigation } from "@react-navigation/native";
 import React, { useState } from "react";
@@ -35,18 +36,20 @@ export default function WithdrawNoticeScreen() {
       await authApi.withdraw();
 
       setConfirmVisible(false);
-      setIsWithdrawing(false);
-
-      setTimeout(() => {
-        runUnauthorizedHandler();
-      }, 500);
     } catch (error) {
       console.log("[WITHDRAW_ERROR]", error);
       setConfirmVisible(false);
       setErrorVisible(true);
+      return;
     } finally {
       setIsWithdrawing(false);
     }
+
+    await clearAllAuthData();
+
+    setTimeout(() => {
+      runUnauthorizedHandler();
+    }, 500);
   };
 
   return (

@@ -52,10 +52,10 @@ export default function OCRCameraScreen({ navigation, route }: Props) {
 
   const guideText =
     ocrType === "MODEL"
-      ? "모델명을 캡쳐해주세요"
+      ? "모델명 캡쳐"
       : ocrType === "SERIAL"
-        ? "시리얼 번호를 캡쳐해주세요"
-        : "구매 정보를 캡쳐해주세요";
+        ? "시리얼 번호 캡쳐"
+        : "구매 정보 캡쳐";
 
   const headerHeight = insets.top + 65;
 
