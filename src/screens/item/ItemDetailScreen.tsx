@@ -1,5 +1,6 @@
 import { typography } from "@/src/constants/typography";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import * as Clipboard from "expo-clipboard";
@@ -706,8 +707,20 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
           }
         }
 
-        openNotice("완료", "제품이 등록되었습니다.", () => {
-          navigation.pop(2);
+        openNotice("완료", "제품이 등록되었습니다.", async () => {
+          await AsyncStorage.setItem("homeUpdated", "1");
+          await AsyncStorage.setItem("itemListUpdated", "1");
+          navigation.reset({
+            index: 0,
+            routes: [
+              {
+                name: "Main",
+                params: {
+                  screen: "아이템",
+                },
+              },
+            ],
+          });
         });
         return;
       }

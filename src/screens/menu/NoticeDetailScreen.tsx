@@ -1,5 +1,6 @@
 import { colors } from "@/src/constants/colors";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import AppHeader from "../../components/common/AppHeader";
@@ -24,6 +25,7 @@ export default function NoticeDetailScreen({ route }: any) {
       setNotice(detail);
 
       await markAnnouncementAsRead(noticeId);
+      await AsyncStorage.setItem("noticeUpdated", "1");
     } catch (e) {
       console.log("[공지사항 상세 조회 실패]", e);
     } finally {

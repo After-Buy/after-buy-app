@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "../../components/common/Toast";
 
 import { modalStyles } from "@/src/styles/modalStyle";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import AppHeader from "../../components/common/AppHeader";
 import { colors } from "../../constants/colors";
 import { deviceService } from "../../services/database/deviceService";
@@ -192,12 +193,24 @@ export default function ItemListScreen() {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
-      const currentFolderKey = folderId === null ? "root" : String(folderId);
+      const checkItemListUpdated = async () => {
+        const updated = await AsyncStorage.getItem("itemListUpdated");
+        const currentFolderKey = folderId === null ? "root" : String(folderId);
 
-      if (loadedFolderRef.current === currentFolderKey) return;
+        if (updated === "1") {
+          await AsyncStorage.removeItem("itemListUpdated");
+          loadedFolderRef.current = currentFolderKey;
+          await loadData();
+          return;
+        }
 
-      loadedFolderRef.current = currentFolderKey;
-      loadData();
+        if (loadedFolderRef.current === currentFolderKey) return;
+
+        loadedFolderRef.current = currentFolderKey;
+        await loadData();
+      };
+
+      checkItemListUpdated();
     });
 
     return unsubscribe;

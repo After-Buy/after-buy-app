@@ -230,7 +230,12 @@ export default function NotificationScreen({ onUnreadChanged }: Props) {
     try {
       await notificationService.deleteNotification(notificationId);
       await onUnreadChanged?.();
-    } catch (error) {
+    } catch (error: any) {
+      console.log("[DELETE NOTIFICATION ERROR]", {
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+
       setNotifications(previous);
       showToast("삭제에 실패했습니다");
     }

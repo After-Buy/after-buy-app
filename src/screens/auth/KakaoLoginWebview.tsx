@@ -106,6 +106,10 @@ export default function KakaoLoginWebView({ onLogin }: Props) {
 
       <WebView
         source={{ uri: kakaoAuthUrl }}
+        incognito
+        cacheEnabled={false}
+        thirdPartyCookiesEnabled={false}
+        sharedCookiesEnabled={false}
         startInLoadingState={false}
         onLoadStart={() => setWebLoading(true)}
         onLoadEnd={() => setWebLoading(false)}

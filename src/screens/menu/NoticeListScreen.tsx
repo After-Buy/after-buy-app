@@ -1,8 +1,15 @@
 import { colors } from "@/src/constants/colors";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import React, { useEffect, useRef, useState } from "react";
-import { FlatList, Text, TouchableOpacity, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  FlatList,
+  RefreshControl,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import AppHeader from "../../components/common/AppHeader";
 import {
   getAnnouncements,
@@ -52,6 +59,7 @@ const CATEGORY_STYLE = {
 
 export default function NoticeListScreen() {
   const navigation = useNavigation<any>();
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [notices, setNotices] = useState<NoticeListItem[]>([]);
   const [pinnedNotices, setPinnedNotices] = useState<NoticeListItem[]>([]);
@@ -89,6 +97,21 @@ export default function NoticeListScreen() {
     }
   };
 
+  const onRefresh = async () => {
+    try {
+      setRefreshing(true);
+
+      if (page !== 1) {
+        setPage(1);
+        return;
+      }
+
+      await loadAnnouncements();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
     loadAnnouncements();
   }, [selectedCategory, page]);
@@ -96,6 +119,23 @@ export default function NoticeListScreen() {
   useEffect(() => {
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
   }, [page, selectedCategory]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const checkNoticeUpdated = async () => {
+        const updated = await AsyncStorage.getItem("noticeUpdated");
+
+        console.log("[NOTICE UPDATED]", updated);
+
+        if (updated === "1") {
+          await AsyncStorage.removeItem("noticeUpdated");
+          await loadAnnouncements();
+        }
+      };
+
+      checkNoticeUpdated();
+    }, [selectedCategory, page]),
+  );
 
   const listData = [
     ...pinnedNotices,
@@ -171,6 +211,9 @@ export default function NoticeListScreen() {
       <FlatList
         ref={listRef}
         data={listData}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         keyExtractor={(item) => String(item.noticeId)}
         contentContainerStyle={[
           noticeListStyles.listContent,

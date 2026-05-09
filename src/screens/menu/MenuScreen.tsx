@@ -1,12 +1,10 @@
 import { runUnauthorizedHandler } from "@/src/services/api/api";
 import { authApi } from "@/src/services/api/authapi";
 import { modalStyles } from "@/src/styles/modalStyle";
+import { clearAllAuthData } from "@/src/utils/authStorage";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  useFocusEffect,
-  useNavigation
-} from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import React, { useCallback, useRef, useState } from "react";
 import {
   Image,
@@ -159,17 +157,15 @@ export default function MenuScreen() {
       if (refreshToken) {
         await authApi.logout(refreshToken);
       }
-
-      setLogoutModalVisible(false);
-
-      runUnauthorizedHandler();
     } catch (error: any) {
       console.log("[LOGOUT_ERROR_STATUS]", error.response?.status);
       console.log("[LOGOUT_ERROR_DATA]", error.response?.data);
       console.log("[LOGOUT_ERROR_MESSAGE]", error.message);
+    } finally {
+      await clearAllAuthData();
 
       setLogoutModalVisible(false);
-      setLogoutErrorVisible(true);
+      runUnauthorizedHandler();
     }
   };
 
