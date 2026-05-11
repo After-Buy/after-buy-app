@@ -31,24 +31,11 @@ import { colors } from "../../constants/colors";
 import { deviceService } from "../../services/database/deviceService";
 import { itemDetailStyle as styles } from "../../styles/item/itemStyle";
 import { modalStyles } from "../../styles/modalStyle";
-import { RootStackParamList } from "../../types/navigation";
+import { DeviceDraftPayload, RootStackParamList } from "../../types/navigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ItemDetail">;
 
-type DeviceDraft = {
-  folder_id: number | null;
-  product_name: string;
-  model_name: string;
-  brand: string;
-  image_url: string;
-  product_link_url: string;
-  purchase_date: string;
-  purchase_price: string;
-  purchase_store: string;
-  warranty_months: string;
-  serial_number: string;
-  memo: string;
-};
+type DeviceDraft = DeviceDraftPayload;
 
 const createEmptyDraft = (
   folderId: number | null,
@@ -174,13 +161,37 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
         const productInfo =
           "productInfo" in route.params ? route.params.productInfo : undefined;
 
-        setDraft(createEmptyDraft(folderId, modelName, productInfo));
+        const draftSnapshot =
+          "draftSnapshot" in route.params
+            ? route.params.draftSnapshot
+            : undefined;
+
+        setDraft((prev) => {
+          if (prev) return prev;
+
+          if (draftSnapshot) {
+            return draftSnapshot;
+          }
+          return createEmptyDraft(folderId, modelName, productInfo);
+        });
         setIsLoading(false);
         return;
       }
 
       try {
         setIsLoading(true);
+
+        const draftSnapshot =
+          "draftSnapshot" in route.params
+            ? route.params.draftSnapshot
+            : undefined;
+
+        if (draftSnapshot) {
+          setDraft(draftSnapshot);
+          setIsLoading(false);
+          return;
+        }
+
         const device = await deviceService.getDeviceById(deviceId as number);
 
         if (!device) {
@@ -220,7 +231,7 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
     };
 
     init();
-  }, [deviceId, isCreateMode, navigation, route.params]);
+  }, [deviceId, isCreateMode]);
 
   useEffect(() => {
     console.log("[ItemDetail] route.params", route.params);
@@ -855,19 +866,6 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
     setImageActionVisible(true);
   };
 
-  const goOCRCamera = (ocrType: "RECEIPT" | "SERIAL") => {
-    if (!isEditMode) return;
-
-    navigation.navigate("OCRCamera", {
-      ocrType,
-      sourceScreen: "ItemDetail",
-      itemDetailParams: {
-        ...route.params,
-        mode: "edit",
-      },
-    });
-  };
-
   const removeWarrantyDigit = () => {
     if (activeWarrantyUnit === "year") {
       setWarrantyYears((prev) => Math.floor(prev / 10));
@@ -1328,6 +1326,8 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
 
   const handleTakePhoto = async () => {
     if (imageActionMode !== "IMAGE") {
+      if (!draft) return;
+
       setImageActionVisible(false);
 
       navigation.navigate("OCRCamera", {
@@ -1336,6 +1336,7 @@ export default function ItemDetailScreen({ navigation, route }: Props) {
         itemDetailParams: {
           ...route.params,
           mode: "edit",
+          draftSnapshot: draft,
         },
       });
 

@@ -25,6 +25,7 @@ export type RootStackParamList = {
         from?: "home" | "item";
         ocrOriginalResult?: OCROriginalResult | null;
         ocrLogId?: number | null;
+        draftSnapshot?: DeviceDraftPayload;
       }
     | {
         deviceId?: undefined;
@@ -37,6 +38,7 @@ export type RootStackParamList = {
         ocrResult?: OCRResultPayload;
         ocrOriginalResult?: OCROriginalResult | null;
         ocrLogId?: number | null;
+        draftSnapshot?: DeviceDraftPayload;
       };
   ItemRegisterModel:
     | {
@@ -61,14 +63,23 @@ export type RootStackParamList = {
           deviceId: number;
           mode?: "view" | "edit";
           from?: "home" | "item";
+          ocrResult?: OCRResultPayload;
+          ocrOriginalResult?: OCROriginalResult | null;
+          ocrLogId?: number | null;
+          draftSnapshot?: DeviceDraftPayload;
         }
       | {
           deviceId?: undefined;
           folderId?: number | null;
           folderName?: string;
           modelName: string;
+          productInfo?: ProductSearchPayload;
           mode: "edit";
           from?: "home" | "item";
+          ocrResult?: OCRResultPayload;
+          ocrOriginalResult?: OCROriginalResult | null;
+          ocrLogId?: number | null;
+          draftSnapshot?: DeviceDraftPayload;
         };
   };
 };
@@ -105,6 +116,21 @@ export type ProductSearchPayload = {
   brand?: string;
   image_url?: string;
   product_link_url?: string;
+};
+
+export type DeviceDraftPayload = {
+  folder_id: number | null;
+  product_name: string;
+  model_name: string;
+  brand: string;
+  image_url: string;
+  product_link_url: string;
+  purchase_date: string;
+  purchase_price: string;
+  purchase_store: string;
+  warranty_months: string;
+  serial_number: string;
+  memo: string;
 };
 
 export type ItemStackParamList = {
